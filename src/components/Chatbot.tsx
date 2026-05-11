@@ -8,10 +8,15 @@ import {
   Zap, 
   User, 
   Sparkles,
-  Search
+  Search,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { Modality } from "@google/genai";
 
 interface Message {
   role: 'user' | 'ai';
@@ -25,8 +30,97 @@ export default function Chatbot() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const { notices } = useNotices();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+        // Automatically send after a short delay if needed, 
+        // but it's better to let user confirm.
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      setIsListening(true);
+      recognitionRef.current?.start();
+    }
+  };
+
+  const speakText = async (text: string) => {
+    if (!ttsEnabled) return;
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      }
+
+      const response = await ai.models.generateContent({
+        model: MODELS.TTS,
+        contents: [{ parts: [{ text }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const binaryString = atob(base64Audio);
+        const len = binaryString.length;
+        const bytes = new Int16Array(len / 2);
+        for (let i = 0; i < len; i += 2) {
+          bytes[i / 2] = (binaryString.charCodeAt(i + 1) << 8) | binaryString.charCodeAt(i);
+        }
+
+        const float32Data = new Float32Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) {
+          float32Data[i] = bytes[i] / 32768;
+        }
+
+        const audioBuffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000);
+        audioBuffer.getChannelData(0).set(float32Data);
+
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current.destination);
+        source.start();
+      }
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -64,7 +158,12 @@ User Question: ${userMsg}`;
         contents: systemPrompt
       });
 
-      setMessages(prev => [...prev, { role: 'ai', text: response.text || "I'm sorry, I couldn't generate a response." }]);
+      const aiResponse = response.text || "I'm sorry, I couldn't generate a response.";
+      setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
+      
+      if (ttsEnabled) {
+        speakText(aiResponse);
+      }
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { role: 'ai', text: "I'm having trouble connecting to my brain right now. Please try again later!" }]);
@@ -95,12 +194,25 @@ User Question: ${userMsg}`;
             <div className="flex items-center gap-3 mb-6 shrink-0">
               <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
               <h2 className="text-lg font-black uppercase italic tracking-tighter">AI Assistant</h2>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="ml-auto p-1.5 hover:bg-white/5 rounded-lg transition-colors text-slate-500 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              
+              <div className="flex items-center gap-2 ml-auto">
+                <button 
+                  onClick={() => setTtsEnabled(!ttsEnabled)}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    ttsEnabled ? "text-indigo-400 hover:bg-indigo-500/10" : "text-slate-500 hover:bg-white/5"
+                  )}
+                  title={ttsEnabled ? "Turn off Voice" : "Turn on Voice"}
+                >
+                  {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-slate-500 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -144,12 +256,24 @@ User Question: ${userMsg}`;
 
             {/* Input */}
             <form onSubmit={handleSend} className="mt-4 p-1 bg-slate-950 rounded-full border border-slate-800 flex items-center shrink-0">
+              <button 
+                type="button"
+                onClick={toggleListening}
+                className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                  isListening 
+                    ? "bg-rose-500/20 text-rose-500 animate-pulse border border-rose-500/30" 
+                    : "text-slate-500 hover:bg-white/5"
+                )}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
               <input 
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about notices..."
-                className="bg-transparent flex-1 px-4 text-xs focus:outline-none text-white font-medium"
+                placeholder={isListening ? "Listening..." : "Ask about notices..."}
+                className="bg-transparent flex-1 px-3 text-xs focus:outline-none text-white font-medium"
               />
               <button 
                 type="submit"

@@ -1,6 +1,6 @@
 {
   "name": "Smart Campus Notice System",
   "description": "An AI-powered notice management system for colleges featuring summaries, smart prioritizing, and a multilingual chatbot.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["AI Summarization", "Real-time Notifications", "Smart Search"]
 }
