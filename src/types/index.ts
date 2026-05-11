@@ -13,7 +13,19 @@ export interface UserProfile {
   createdAt: Timestamp;
 }
 
-export type NoticeCategory = 'Exam' | 'Event' | 'Placement' | 'Assignment' | 'Other';
+export type NoticeCategory = 
+  | 'Assignment' 
+  | 'Event' 
+  | 'Exam' 
+  | 'Workshop' 
+  | 'Holiday' 
+  | 'Placement' 
+  | 'Urgent' 
+  | 'Circular' 
+  | 'Competition' 
+  | 'Seminar' 
+  | 'Club Activity' 
+  | 'Other';
 export type NoticePriority = 'Normal' | 'Important' | 'Urgent';
 
 export interface Notice {

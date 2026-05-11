@@ -24,69 +24,80 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Soft Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-slate-950 to-indigo-900/10 pointer-events-none" />
+      
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-lg relative z-10"
       >
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-8 text-[10px] font-black uppercase tracking-widest group"
+          className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-10 text-[10px] font-black uppercase tracking-[0.3em] group ml-4"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Login
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> BACK TO LOGIN
         </button>
 
-        <div className="bg-slate-900/40 backdrop-blur-3xl border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Reset Password</h1>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">We'll send you a secure link</p>
+        <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-10 shadow-2xl">
+          <div className="text-center mb-10">
+            <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Reset Access</h1>
+            <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Secure Recovery Protocol</p>
           </div>
 
           {sent ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-6"
+            >
+              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/10">
+                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
-              <p className="text-slate-500 text-sm mb-8">We have sent a password reset link to <span className="text-white font-bold">{email}</span></p>
+              <h2 className="text-2xl font-black italic text-white uppercase tracking-tight mb-3">Transmission Successful</h2>
+              <p className="text-slate-500 text-sm font-medium mb-10 px-4">Verification link dispatched to <span className="text-white block mt-1">{email}</span></p>
               <button 
                 onClick={onBack}
-                className="btn-primary w-full py-4 text-center"
+                className="w-full bg-slate-100 text-slate-950 font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-white transition-all transform active:scale-95"
               >
-                RETURN TO LOGIN
+                RETURN TO GATEWAY
               </button>
-            </div>
+            </motion.div>
           ) : (
             <form onSubmit={handleReset} className="space-y-6">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-1.5 block">Campus Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Registered Campus Email</label>
+                <div className="relative group">
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   <input 
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@college.edu"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-white font-medium"
+                    placeholder="name@goa.paruluniversity.ac.in"
+                    className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-white font-medium"
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-center gap-3 text-rose-400 text-xs font-bold leading-tight">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3 text-rose-400 text-xs font-bold leading-tight"
+                >
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   {error}
-                </div>
+                </motion.div>
               )}
 
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full btn-primary py-4 flex items-center justify-center gap-2 group"
+                className="w-full bg-slate-100 text-slate-950 font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-white transition-all transform active:scale-95 disabled:opacity-50"
               >
-                {loading ? "SENDING..." : "SEND RESET LINK"}
+                {loading ? "PROCESSING..." : "REQUEST RESET LINK"}
                 <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
             </form>

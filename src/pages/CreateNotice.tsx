@@ -42,6 +42,39 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     isPinned: false
   });
 
+  const CATEGORIES: NoticeCategory[] = [
+    'Assignment', 'Event', 'Exam', 'Workshop', 'Holiday', 
+    'Placement', 'Urgent', 'Circular', 'Competition', 
+    'Seminar', 'Club Activity', 'Other'
+  ];
+
+  // Auto-category suggestion
+  React.useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (formData.title.length > 5) {
+        try {
+          const prompt = `Analyze the notice title: "${formData.title}". 
+          Suggest the most relevant category from: ${CATEGORIES.join(', ')}. 
+          Return ONLY the category name. If unclear, return "Other".`;
+          
+          const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt
+          });
+          
+          const suggested = response.text?.trim() as NoticeCategory;
+          if (CATEGORIES.includes(suggested)) {
+            setFormData(prev => ({ ...prev, category: suggested }));
+          }
+        } catch (err) {
+          console.error('AI Suggestion Error:', err);
+        }
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [formData.title]);
+
   const handleAiAction = async (action: 'summarize' | 'simplify' | 'suggest') => {
     if (!formData.description && !formData.title) return;
     setAiLoading(true);
@@ -62,7 +95,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         });
         setFormData(prev => ({ ...prev, simplified: response.text || '' }));
       } else if (action === 'suggest') {
-        prompt = `Based on the following notice title and description, suggest the most appropriate category (Exam, Event, Placement, Assignment, Other) and priority (Normal, Important, Urgent). Return ONLY valid JSON: {"category": "...", "priority": "..."}.\nTitle: ${formData.title}\nDescription: ${formData.description}`;
+        prompt = `Based on the following notice title and description, suggest the most appropriate category (${CATEGORIES.join(', ')}) and priority (Normal, Important, Urgent). Return ONLY valid JSON: {"category": "...", "priority": "..."}.\nTitle: ${formData.title}\nDescription: ${formData.description}`;
          const response = await ai.models.generateContent({
           model: MODELS.FLASH,
           contents: prompt,
@@ -245,9 +278,9 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                   <select 
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none appearance-none"
+                    className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-blue-500/50 appearance-none text-white font-medium"
                   >
-                    {['Exam', 'Event', 'Placement', 'Assignment', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
+                    {CATEGORIES.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
                   </select>
                 </div>
 

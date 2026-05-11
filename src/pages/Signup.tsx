@@ -16,9 +16,13 @@ import {
 import { cn } from '../lib/utils';
 import { UserRole } from '../types';
 
-const TEACHER_ACCESS_CODE = 'CAMPUS-2026-ADMIN';
+const TEACHER_ACCESS_CODE = 'PARUL01';
+
+const STUDENT_EMAIL_REGEX = /^\d+@goa\.paruluniversity\.ac\.in$/;
+const TEACHER_EMAIL_REGEX = /^.+@goa\.paruluniversity\.ac\.in$/;
 
 const INSTITUTIONS = [
+  "Parul University",
   "Faculty of Information Technology",
   "Faculty of Engineering",
   "Faculty of IT & Computer Science",
@@ -29,11 +33,12 @@ const INSTITUTIONS = [
 
 const DEPARTMENTS: Record<string, string[]> = {
   "Faculty of Information Technology": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
-  "Faculty of Engineering": ["BTech", "MTech", "Diploma in Engineering"],
+  "Faculty of Engineering": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
   "Faculty of IT & Computer Science": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
   "Faculty of Nursing": ["GNM", "BSc Nursing", "OT Technology (OTT)", "Physiotherapy"],
   "Faculty of Pharmacy": ["D.Pharm", "B.Pharm", "M.Pharm", "Pharmaceutical Sciences"],
-  "Faculty of Management": ["MBA", "BBA", "BMS", "Finance", "HR", "Marketing"]
+  "Faculty of Management": ["MBA", "BBA", "BMS", "Finance", "HR", "Marketing"],
+  "Parul University": ["General Administration", "Academic Office", "Student Services", "Examination Cell"]
 };
 
 export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
@@ -62,15 +67,33 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isOAuth && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    
+    if (!isOAuth) {
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+    }
+
+    // Role-based Email & Code Validation
+    if (role === 'student' && !STUDENT_EMAIL_REGEX.test(formData.email.trim())) {
+      setError('Invalid student email format. Must be (ID)@goa.paruluniversity.ac.in');
       return;
     }
 
-    if (role === 'teacher' && formData.accessCode !== TEACHER_ACCESS_CODE) {
-      setError('Invalid Teacher Access Code. Please use the administrative code CAMPUS-2026-ADMIN for this demo.');
-      setLoading(false);
-      return;
+    if (role === 'teacher') {
+      if (!TEACHER_EMAIL_REGEX.test(formData.email.trim())) {
+        setError('Invalid teacher email format. Must end with @goa.paruluniversity.ac.in');
+        return;
+      }
+      if (formData.accessCode !== TEACHER_ACCESS_CODE) {
+        setError('Invalid teacher access code');
+        return;
+      }
     }
 
     setLoading(true);
@@ -82,18 +105,18 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           displayName: formData.name,
           role,
           institution: formData.institution,
-          department: formData.department,
-          staffId: role === 'teacher' ? formData.staffId : undefined,
           email: formData.email.trim(),
+          staffId: role === 'teacher' ? formData.staffId : undefined,
+          department: role === 'student' ? formData.department : 'General'
         });
       } else {
         await signUpWithEmail(formData.email.trim(), formData.password, {
           displayName: formData.name,
           role,
           institution: formData.institution,
-          department: formData.department,
-          staffId: role === 'teacher' ? formData.staffId : undefined,
           email: formData.email.trim(),
+          staffId: role === 'teacher' ? formData.staffId : undefined,
+          department: role === 'student' ? formData.department : 'General'
         });
       }
     } catch (err: any) {
@@ -117,30 +140,36 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
   const prevStep = () => setStep(prev => prev - 1);
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Soft Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-950 to-purple-900/20 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-purple-600/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-xl relative z-10"
       >
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">Create Account</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Join your campus notice board system</p>
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Create Account</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Campus Notice Board Security Protocol</p>
         </div>
 
-        <div className="bg-slate-900/40 backdrop-blur-3xl border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
-          {/* Progress Bar */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-slate-800">
-             <motion.div 
-               className="h-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,1)]"
-               initial={{ width: '0%' }}
-               animate={{ width: `${(step / (role === 'teacher' ? 3 : 2)) * 100}%` }}
-             />
+        <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+          {/* Progress Indicator */}
+          <div className="flex gap-2 mb-10">
+            {[1, 2, 3].map((s) => (
+              <div 
+                key={s}
+                className={cn(
+                  "h-1 rounded-full transition-all duration-500",
+                  step >= s ? "bg-blue-500 w-full" : "bg-slate-800 w-4"
+                )}
+              />
+            ))}
           </div>
 
           <form onSubmit={handleSignup} className="mt-4">
@@ -213,98 +242,103 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                     <h2 className="text-xl font-bold italic text-white uppercase tracking-tighter">Enter profile information</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Full Name</label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                         <input 
                           type="text"
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          placeholder="Dr. Sarah Johnson"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 shadow-inner focus:outline-none focus:border-blue-500/50 text-white"
+                          placeholder="John Doe"
+                          className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Institution</label>
-                      <div className="relative">
-                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                        <select 
-                          required
-                          value={formData.institution}
-                          onChange={(e) => setFormData({...formData, institution: e.target.value, department: ''})}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 shadow-inner focus:outline-none focus:border-blue-500/50 text-white appearance-none"
-                        >
-                          <option value="">Select Faculty</option>
-                          {INSTITUTIONS.map(inst => <option key={inst} value={inst}>{inst}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Department</label>
-                      <div className="relative">
-                        <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                        <select 
-                          required
-                          disabled={!formData.institution}
-                          value={formData.department}
-                          onChange={(e) => setFormData({...formData, department: e.target.value})}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 pr-4 shadow-inner focus:outline-none focus:border-blue-500/50 text-white disabled:opacity-50 appearance-none"
-                        >
-                          <option value="">Select Dept.</option>
-                          {availableDepartments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
                     <div className="md:col-span-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Email Address</label>
-                       <div className="relative">
-                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Email Address</label>
+                       <div className="relative group">
+                         <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                          <input 
                            type="email"
                            required
                            value={formData.email}
                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                           placeholder="staff@college.edu"
-                           className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 focus:outline-none focus:border-blue-500/50 text-white"
+                           placeholder={role === 'student' ? "2503032020017@goa.paruluniversity.ac.in" : "name@goa.paruluniversity.ac.in"}
+                           className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
                          />
                        </div>
+                       <p className="text-[9px] text-slate-600 mt-2 ml-4 uppercase tracking-tight font-bold">
+                         {role === 'student' ? 'Must follow numeric format: (ID)@goa.paruluniversity.ac.in' : 'Must end with @goa.paruluniversity.ac.in'}
+                       </p>
                     </div>
+
+                    <div className={cn(role === 'student' ? "md:col-span-1" : "md:col-span-2")}>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Institution</label>
+                      <div className="relative group">
+                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                        <select 
+                          required
+                          value={formData.institution}
+                          onChange={(e) => setFormData({...formData, institution: e.target.value, department: ''})}
+                          className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none"
+                        >
+                          <option value="">Select Faculty</option>
+                          {INSTITUTIONS.map(inst => <option key={inst} value={inst} className="bg-slate-900">{inst}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {role === 'student' && (
+                      <div className="md:col-span-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Department</label>
+                        <div className="relative group">
+                          <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                          <select 
+                            required
+                            disabled={!formData.institution}
+                            value={formData.department}
+                            onChange={(e) => setFormData({...formData, department: e.target.value})}
+                            className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none disabled:opacity-50"
+                          >
+                            <option value="">Select Dept.</option>
+                            {availableDepartments.map(dept => <option key={dept} value={dept} className="bg-slate-900">{dept}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
                     {!isOAuth && (
                       <>
                         <div>
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Password</label>
-                          <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Password</label>
+                          <div className="relative group">
+                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                             <input 
                               type="password"
                               required
                               value={formData.password}
                               onChange={(e) => setFormData({...formData, password: e.target.value})}
                               placeholder="••••••••"
-                              className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 focus:outline-none focus:border-blue-500/50 text-white"
+                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Confirm</label>
-                          <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Confirm</label>
+                          <div className="relative group">
+                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                             <input 
                               type="password"
                               required
                               value={formData.confirmPassword}
                               onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                               placeholder="••••••••"
-                              className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 pl-12 focus:outline-none focus:border-blue-500/50 text-white"
+                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
                             />
                           </div>
                         </div>
@@ -359,17 +393,17 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                       <p className="text-[9px] text-slate-600 mt-2 ml-4 uppercase tracking-tight">Your unique staff or employee identification number</p>
                     </div>
 
-                    <div className="p-6 bg-slate-950/50 border border-slate-800 rounded-[2rem] border-dashed">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-500 mb-3 block text-center">Teacher Access Code</label>
+                  <div className="p-8 bg-slate-950/50 border-2 border-white/5 border-dashed rounded-[2.5rem]">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4 block text-center">Teacher Access Code</label>
                       <input 
                         type="password"
                         required
                         value={formData.accessCode}
                         onChange={(e) => setFormData({...formData, accessCode: e.target.value})}
-                        placeholder="ENTER AUTH CODE"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-6 focus:outline-none focus:border-purple-500/50 text-white text-center font-mono tracking-widest uppercase placeholder:text-slate-800"
+                        placeholder="••••••••"
+                        className="w-full bg-slate-950 border border-white/5 rounded-2xl py-5 px-6 focus:outline-none focus:border-purple-500/50 text-white text-center font-mono text-xl tracking-[0.5em]"
                       />
-                      <p className="text-[9px] text-slate-600 mt-2 text-center uppercase tracking-tight">Code: <span className="text-slate-400 select-all">CAMPUS-2026-ADMIN</span></p>
+                      <p className="text-[9px] text-slate-600 mt-4 text-center uppercase tracking-widest font-bold">Standard teacher authorization key required: PARUL01</p>
                     </div>
                   </div>
 

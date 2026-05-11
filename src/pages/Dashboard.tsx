@@ -12,7 +12,11 @@ export default function Dashboard({ onNavigate }: { onNavigate: (view: string, n
   const { profile } = useAuth();
   const [filter, setFilter] = useState('All');
 
-  const categories = ['All', 'Exam', 'Event', 'Placement', 'Assignment', 'Other'];
+  const categories = [
+    'All', 'Assignment', 'Event', 'Exam', 'Workshop', 'Holiday', 
+    'Placement', 'Urgent', 'Circular', 'Competition', 
+    'Seminar', 'Club Activity', 'Other'
+  ];
 
   const filteredNotices = filter === 'All' 
     ? notices 
