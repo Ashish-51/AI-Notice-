@@ -43,6 +43,8 @@ export interface Notice {
   authorName: string;
   isPinned: boolean;
   attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
   formLink?: string;
   viewCount: number;
 }

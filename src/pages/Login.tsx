@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'motion/react';
-import { LogIn, Mail, Lock, AlertCircle, ArrowRight, UserCheck } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, ArrowRight, UserCheck, ArrowLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
+import toast, { Toaster } from 'react-hot-toast';
 
 const STUDENT_EMAIL_REGEX = /^\d+@goa\.paruluniversity\.ac\.in$/;
 const TEACHER_EMAIL_REGEX = /^.+@goa\.paruluniversity\.ac\.in$/;
 
-export default function Login({ onSwitchToSignup, onSwitchToForgot }: { onSwitchToSignup: () => void, onSwitchToForgot: () => void }) {
+export default function Login({ 
+  onSwitchToSignup, 
+  onSwitchToForgot,
+  onBack
+}: { 
+  onSwitchToSignup: () => void, 
+  onSwitchToForgot: () => void,
+  onBack?: () => void
+}) {
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +32,12 @@ export default function Login({ onSwitchToSignup, onSwitchToForgot }: { onSwitch
     const isTeacher = TEACHER_EMAIL_REGEX.test(cleanEmail);
 
     if (!isStudent && !isTeacher) {
-      setError('Invalid student or teacher email format');
+      setError('Invalid institutional email format');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
 
@@ -31,6 +45,7 @@ export default function Login({ onSwitchToSignup, onSwitchToForgot }: { onSwitch
     setError('');
     try {
       await signInWithEmail(cleanEmail, password);
+      toast.success("Login Successful 🎉");
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/invalid-credential') {
@@ -50,6 +65,7 @@ export default function Login({ onSwitchToSignup, onSwitchToForgot }: { onSwitch
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+      <Toaster position="top-center" />
       {/* Soft Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-950 to-indigo-900/20 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
@@ -62,7 +78,16 @@ export default function Login({ onSwitchToSignup, onSwitchToForgot }: { onSwitch
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg relative z-10"
       >
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 relative">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="absolute left-0 top-0 text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back
+            </button>
+          )}
           <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-[1.25rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-600/20 italic font-black text-3xl text-white">N</div>
           <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Welcome Back</h1>
           <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Access your campus priority board</p>

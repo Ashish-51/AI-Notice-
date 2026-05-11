@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { UserRole } from '../types';
+import toast, { Toaster } from 'react-hot-toast';
 
 const TEACHER_ACCESS_CODE = 'PARUL01';
 
@@ -69,8 +70,8 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
     e.preventDefault();
     
     if (!isOAuth) {
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters');
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters long');
         return;
       }
       if (formData.password !== formData.confirmPassword) {
@@ -81,7 +82,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
 
     // Role-based Email & Code Validation
     if (role === 'student' && !STUDENT_EMAIL_REGEX.test(formData.email.trim())) {
-      setError('Invalid student email format. Must be (ID)@goa.paruluniversity.ac.in');
+      setError('Invalid institutional email format');
       return;
     }
 
@@ -91,7 +92,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
         return;
       }
       if (formData.accessCode !== TEACHER_ACCESS_CODE) {
-        setError('Invalid teacher access code');
+        setError('Invalid authorized key');
         return;
       }
     }
@@ -119,6 +120,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           department: role === 'student' ? formData.department : 'General'
         });
       }
+      toast.success("Account Created Successfully 🎉");
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/operation-not-allowed') {
@@ -128,7 +130,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid campus email address.');
       } else if (err.code === 'auth/weak-password') {
-        setError('Password should be at least 6 characters long.');
+        setError('Password must be at least 8 characters long');
       } else {
         setError(err.message || 'Signup failed. Please check your credentials.');
       }
@@ -141,6 +143,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+      <Toaster position="top-center" />
       {/* Soft Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-950 to-purple-900/20 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
@@ -394,16 +397,15 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                     </div>
 
                   <div className="p-8 bg-slate-950/50 border-2 border-white/5 border-dashed rounded-[2.5rem]">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4 block text-center">Teacher Access Code</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4 block text-center">Enter Authorized Key</label>
                       <input 
                         type="password"
                         required
                         value={formData.accessCode}
                         onChange={(e) => setFormData({...formData, accessCode: e.target.value})}
-                        placeholder="••••••••"
+                        placeholder="Enter authorized key"
                         className="w-full bg-slate-950 border border-white/5 rounded-2xl py-5 px-6 focus:outline-none focus:border-purple-500/50 text-white text-center font-mono text-xl tracking-[0.5em]"
                       />
-                      <p className="text-[9px] text-slate-600 mt-4 text-center uppercase tracking-widest font-bold">Standard teacher authorization key required: PARUL01</p>
                     </div>
                   </div>
 

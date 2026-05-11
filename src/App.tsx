@@ -28,7 +28,7 @@ function AppContent() {
   // Not logged in
   if (!user) {
     if (currentView === 'auth') {
-      return <AuthPage />;
+      return <AuthPage onBackToLanding={() => setCurrentView('landing')} />;
     }
     return <LandingPage onStart={() => setCurrentView('auth')} />;
   }

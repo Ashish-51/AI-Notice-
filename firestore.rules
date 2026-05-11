@@ -51,15 +51,18 @@ service cloud.firestore {
     function isValidNotice(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
              data.description is string && data.description.size() > 0 && data.description.size() <= 10000 &&
-             data.summary is string && data.summary.size() <= 2000 &&
-             data.simplified is string && data.simplified.size() <= 5000 &&
-             data.category in ['Exam', 'Event', 'Placement', 'Assignment', 'Other'] &&
+             data.get('summary', '') is string && data.get('summary', '').size() <= 2000 &&
+             data.get('simplified', '') is string && data.get('simplified', '').size() <= 5000 &&
+             data.category in ['Assignment', 'Event', 'Exam', 'Workshop', 'Holiday', 'Placement', 'Urgent', 'Circular', 'Competition', 'Seminar', 'Club Activity', 'Other'] &&
              data.priority in ['Normal', 'Important', 'Urgent'] &&
              data.expiryDate is timestamp &&
              data.updatedAt == request.time &&
              data.authorId == request.auth.uid &&
              data.authorName is string && data.authorName.size() <= 100 &&
              data.isPinned is bool &&
+             data.get('attachmentUrl', '') is string && data.get('attachmentUrl', '').size() <= 1000 &&
+             data.get('attachmentName', '') is string && data.get('attachmentName', '').size() <= 500 &&
+             data.get('attachmentType', '') is string && data.get('attachmentType', '').size() <= 100 &&
              data.formLink is string && data.formLink.size() <= 500 &&
              data.viewCount is int && data.viewCount >= 0;
     }

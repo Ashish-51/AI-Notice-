@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import { motion } from 'motion/react';
 import { Mail, ArrowLeft, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
+const INSTITUTIONAL_EMAIL_REGEX = /^.+@goa\.paruluniversity\.ac\.in$/;
+
 export default function ForgotPassword({ onBack }: { onBack: () => void }) {
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
@@ -12,6 +14,12 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!INSTITUTIONAL_EMAIL_REGEX.test(email.trim())) {
+      setError('Invalid institutional email format');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -56,7 +64,7 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
               <h2 className="text-2xl font-black italic text-white uppercase tracking-tight mb-3">Transmission Successful</h2>
-              <p className="text-slate-500 text-sm font-medium mb-10 px-4">Verification link dispatched to <span className="text-white block mt-1">{email}</span></p>
+              <p className="text-slate-500 text-sm font-medium mb-10 px-4">Password reset link sent to your email <span className="text-white block mt-1">{email}</span></p>
               <button 
                 onClick={onBack}
                 className="w-full bg-slate-100 text-slate-950 font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-white transition-all transform active:scale-95"

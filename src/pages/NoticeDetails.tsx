@@ -148,10 +148,20 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
                 </button>
               )}
               {notice.attachmentUrl && (
-                <button className="w-full btn-secondary flex items-center justify-center gap-2 py-3">
-                  <Paperclip className="w-4 h-4" />
-                  Download PDF
-                </button>
+                <a 
+                  href={notice.attachmentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-white rounded-xl flex flex-col items-center justify-center p-4 transition-all border border-white/5 group no-underline"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Paperclip className="w-4 h-4 text-blue-400 group-hover:rotate-12 transition-transform" />
+                    <span className="text-sm font-bold tracking-tight">Attachment</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium truncate max-w-full px-4">
+                    {notice.attachmentName || 'View Document'}
+                  </span>
+                </a>
               )}
               {!notice.formLink && !notice.attachmentUrl && (
                 <p className="text-xs text-slate-500 text-center italic py-2">No external links provided.</p>

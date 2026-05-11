@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { db } from '../lib/firebase';
+import { db, getStorageInstance } from '../lib/firebase';
 import { ai, MODELS } from '../lib/gemini';
 import { 
   collection, 
@@ -8,6 +8,7 @@ import {
   serverTimestamp, 
   Timestamp 
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   ArrowLeft, 
   Send, 
@@ -17,17 +18,23 @@ import {
   Clock, 
   AlertCircle,
   FileText,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Paperclip,
+  X,
+  FileUp
 } from 'lucide-react';
 import { NoticeCategory, NoticePriority, OperationType } from '../types';
 import { handleFirestoreError } from '../lib/error-handler';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 
 export default function CreateNotice({ onBack }: { onBack: () => void }) {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -115,6 +122,17 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast.error("File size must be less than 10MB");
+        return;
+      }
+      setAttachment(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
@@ -123,6 +141,26 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     try {
       const expiryDateTime = new Date(`${formData.expiryDate}T${formData.expiryTime}`);
       
+      let attachmentUrl = '';
+      let attachmentName = '';
+      let attachmentType = '';
+
+      if (attachment) {
+        const fileExt = attachment.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const storage = getStorageInstance();
+        if (!storage) throw new Error("Firebase Storage is not available. Please contact admin to enable storage.");
+        
+        const storageRef = ref(storage, `notices/${user.uid}/${fileName}`);
+        
+        toast.loading("Uploading attachment...", { id: 'upload' });
+        const snapshot = await uploadBytes(storageRef, attachment);
+        attachmentUrl = await getDownloadURL(snapshot.ref);
+        attachmentName = attachment.name;
+        attachmentType = attachment.type;
+        toast.success("Attachment uploaded", { id: 'upload' });
+      }
+
       const noticeData = {
         title: formData.title,
         description: formData.description,
@@ -137,10 +175,14 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         authorName: user.displayName || 'Teacher',
         isPinned: formData.isPinned,
         formLink: formData.formLink,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
         viewCount: 0
       };
 
       await addDoc(collection(db, 'notices'), noticeData);
+      toast.success("Notice published successfully 🎉");
       onBack();
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'notices');
@@ -317,6 +359,53 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                       />
                       <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Pin to top of board</span>
                    </label>
+                </div>
+
+                <div className="space-y-4">
+                   <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest leading-none">
+                      <Paperclip className="w-3.5 h-3.5" /> Attachment
+                   </div>
+                   {!attachment ? (
+                     <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-white/5 hover:border-blue-500/30 rounded-2xl p-6 transition-all flex flex-col items-center gap-3 group"
+                     >
+                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:bg-blue-500/10 transition-colors">
+                          <FileUp className="w-5 h-5 text-slate-500 group-hover:text-blue-400" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">Click to upload doc</p>
+                          <p className="text-[10px] text-slate-500 mt-1">Images, PDF, Word (Max 10MB)</p>
+                        </div>
+                        <input 
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                          accept="image/*,.pdf,.doc,.docx"
+                          className="hidden"
+                        />
+                     </button>
+                   ) : (
+                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-center justify-between group">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-blue-400" />
+                          </div>
+                          <div className="overflow-hidden">
+                            <p className="text-xs font-bold text-white truncate">{attachment.name}</p>
+                            <p className="text-[10px] text-slate-400">{(attachment.size / (1024 * 1024)).toFixed(2)} MB</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setAttachment(null)}
+                          className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                     </div>
+                   )}
                 </div>
 
                 <div className="space-y-4">

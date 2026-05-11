@@ -5,7 +5,13 @@ import ForgotPassword from './ForgotPassword';
 
 type View = 'login' | 'signup' | 'forgot' | 'complete-profile';
 
-export default function AuthPage({ initialView = 'login' }: { initialView?: View }) {
+export default function AuthPage({ 
+  initialView = 'login',
+  onBackToLanding
+}: { 
+  initialView?: View,
+  onBackToLanding?: () => void
+}) {
   const [currentView, setCurrentView] = useState<View>(initialView);
 
   return (
@@ -14,6 +20,7 @@ export default function AuthPage({ initialView = 'login' }: { initialView?: View
         <Login 
           onSwitchToSignup={() => setCurrentView('signup')} 
           onSwitchToForgot={() => setCurrentView('forgot')} 
+          onBack={onBackToLanding}
         />
       )}
       {currentView === 'signup' && (

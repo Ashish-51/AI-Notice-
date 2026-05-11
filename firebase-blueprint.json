@@ -25,7 +25,7 @@
         "description": { "type": "string" },
         "summary": { "type": "string" },
         "simplified": { "type": "string" },
-        "category": { "type": "string", "enum": ["Exam", "Event", "Placement", "Assignment", "Other"] },
+        "category": { "type": "string", "enum": ["Assignment", "Event", "Exam", "Workshop", "Holiday", "Placement", "Urgent", "Circular", "Competition", "Seminar", "Club Activity", "Other"] },
         "priority": { "type": "string", "enum": ["Normal", "Important", "Urgent"] },
         "expiryDate": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -34,6 +34,8 @@
         "authorName": { "type": "string" },
         "isPinned": { "type": "boolean" },
         "attachmentUrl": { "type": "string" },
+        "attachmentName": { "type": "string" },
+        "attachmentType": { "type": "string" },
         "formLink": { "type": "string" },
         "viewCount": { "type": "number" }
       },
