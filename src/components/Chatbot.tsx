@@ -138,24 +138,27 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // Create context from notices
-      const noticesContext = notices.map(n => 
-        `- [${n.category}] ${n.title}: ${n.description}. Deadline: ${n.expiryDate.toDate().toLocaleString()}. Priority: ${n.priority}`
+      // Create optimized context from notices - only essential info to reduce latency
+      const noticesContext = notices.slice(0, 15).map(n => 
+        `- [${n.category}] ${n.title}: ${n.summary || n.description.substring(0, 80)}${n.description.length > 80 ? '...' : ''}`
       ).join('\n');
 
-      const systemPrompt = `You are an AI Campus Assistant for a college notice management system.
-Your job is to answer student questions based ONLY on the provided notice board data.
-If you don't know the answer or it's not in the data, politely say you don't have that information.
-Be concise, helpful, and friendly.
+      const systemPrompt = `You are a fast AI Campus Assistant. 
+Answer questions using ONLY the notice data provided. 
+Be extremely concise (max 2-3 sentences).
+If data is missing, say "Information not found".
 
-CURRENT NOTICES:
+NOTICES:
 ${noticesContext}
 
-User Question: ${userMsg}`;
+User: ${userMsg}`;
 
       const response = await ai.models.generateContent({
         model: MODELS.FLASH,
-        contents: systemPrompt
+        contents: systemPrompt,
+        config: {
+          responseModalities: [Modality.TEXT],
+        }
       });
 
       const aiResponse = response.text || "I'm sorry, I couldn't generate a response.";
