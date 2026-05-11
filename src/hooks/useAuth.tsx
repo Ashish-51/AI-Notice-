@@ -2,13 +2,18 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile, UserRole, OperationType } from '../types';
+import { handleFirestoreError } from '../lib/error-handler';
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, profile: Omit<UserProfile, 'uid' | 'createdAt'>) => Promise<void>;
+  completeProfile: (profile: Omit<UserProfile, 'uid' | 'createdAt'>) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   setRole: (role: UserRole) => Promise<void>;
 }
@@ -24,11 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        } else {
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProfile(docSnap.data() as UserProfile);
+          } else {
+            setProfile(null);
+          }
+        } catch (err) {
+          handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
           setProfile(null);
         }
       } else {
@@ -47,8 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role,
       createdAt: serverTimestamp() as any,
     };
-    await setDoc(doc(db, 'users', user.uid), profileData);
-    setProfile(profileData);
+    try {
+      await setDoc(doc(db, 'users', user.uid), profileData);
+      setProfile(profileData);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+    }
   };
 
   const signInWithGoogle = async () => {
@@ -61,8 +75,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Sign-in cancelled by user');
       } else {
         console.error('Authentication error:', error);
+        throw error;
       }
     }
+  };
+
+  const signInWithEmail = async (email: string, pass: string) => {
+    const { signInWithEmailAndPassword } = await import('firebase/auth');
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, profileData: Omit<UserProfile, 'uid' | 'createdAt'>) => {
+    const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    if (profileData.displayName) {
+      await updateProfile(userCredential.user, { displayName: profileData.displayName });
+    }
+
+    const cleanProfile = (data: any) => {
+      const cleaned = { ...data };
+      Object.keys(cleaned).forEach(key => cleaned[key] === undefined && delete cleaned[key]);
+      return cleaned;
+    };
+
+    const fullProfile: UserProfile = cleanProfile({
+      ...profileData,
+      uid: userCredential.user.uid,
+      email: userCredential.user.email,
+      createdAt: serverTimestamp() as any,
+    }) as UserProfile;
+
+    try {
+      await setDoc(doc(db, 'users', userCredential.user.uid), fullProfile);
+      setProfile(fullProfile);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${userCredential.user.uid}`);
+    }
+  };
+
+  const completeProfile = async (profileData: Omit<UserProfile, 'uid' | 'createdAt'>) => {
+    if (!user) throw new Error('No authenticated user');
+    
+    const cleanProfile = (data: any) => {
+      const cleaned = { ...data };
+      Object.keys(cleaned).forEach(key => cleaned[key] === undefined && delete cleaned[key]);
+      return cleaned;
+    };
+
+    const fullProfile: UserProfile = cleanProfile({
+      ...profileData,
+      uid: user.uid,
+      email: user.email,
+      createdAt: serverTimestamp() as any,
+    }) as UserProfile;
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), fullProfile);
+      setProfile(fullProfile);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    const { sendPasswordResetEmail } = await import('firebase/auth');
+    await sendPasswordResetEmail(auth, email);
   };
 
   const signOut = async () => {
@@ -70,7 +148,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signOut, setRole }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profile, 
+      loading, 
+      signInWithGoogle, 
+      signInWithEmail, 
+      signUpWithEmail, 
+      completeProfile,
+      resetPassword,
+      signOut, 
+      setRole 
+    }}>
       {children}
     </AuthContext.Provider>
   );

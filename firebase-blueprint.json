@@ -9,9 +9,12 @@
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["teacher", "student"] },
+        "institution": { "type": "string" },
+        "department": { "type": "string" },
+        "staffId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role"]
+      "required": ["uid", "email", "role", "institution", "department"]
     },
     "Notice": {
       "title": "Smart Notice",

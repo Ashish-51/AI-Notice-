@@ -11,23 +11,31 @@ import { Notice } from './types';
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'create' | 'analytics' | 'details'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'dashboard' | 'create' | 'analytics' | 'details'>('landing');
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+          <div className="absolute inset-0 flex items-center justify-center font-black italic text-blue-500">N</div>
+        </div>
       </div>
     );
   }
 
+  // Not logged in
   if (!user) {
-    return <LandingPage onStart={() => setCurrentView('landing')} />;
+    if (currentView === 'auth') {
+      return <AuthPage />;
+    }
+    return <LandingPage onStart={() => setCurrentView('auth')} />;
   }
 
+  // Logged in but no profile (e.g. first time Google user)
   if (!profile) {
-    return <AuthPage />;
+    return <AuthPage initialView="complete-profile" />;
   }
 
   const navigateTo = (view: any, notice: Notice | null = null) => {
@@ -36,9 +44,11 @@ function AppContent() {
   };
 
   return (
-    <Layout currentView={currentView} onNavigate={navigateTo}>
-      {currentView === 'landing' && <Dashboard onNavigate={navigateTo} />}
-      {currentView === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
+    <Layout 
+      currentView={currentView === 'landing' || currentView === 'auth' ? 'dashboard' : currentView} 
+      onNavigate={navigateTo}
+    >
+      {(currentView === 'landing' || currentView === 'dashboard') && <Dashboard onNavigate={navigateTo} />}
       {currentView === 'create' && <CreateNotice onBack={() => setCurrentView('dashboard')} />}
       {currentView === 'analytics' && <Analytics />}
       {currentView === 'details' && selectedNotice && (

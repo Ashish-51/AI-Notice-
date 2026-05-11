@@ -7,6 +7,9 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   role: UserRole;
+  institution?: string;
+  department?: string;
+  staffId?: string;
   createdAt: Timestamp;
 }
 

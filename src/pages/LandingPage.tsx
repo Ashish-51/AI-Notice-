@@ -4,28 +4,24 @@ import { Bell, Shield, GraduationCap, ChevronRight, Zap, Clock, Search as Search
 import { motion } from 'motion/react';
 
 export default function LandingPage({ onStart }: { onStart: () => void }) {
-  const { signInWithGoogle } = useAuth();
-
   return (
-    <div className="min-h-screen bg-slate-950 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#020617] selection:bg-blue-500/30 font-sans tracking-tight">
       {/* Decorative Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
       </div>
 
-      <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+      <nav className="relative z-10 flex items-center justify-between px-8 py-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Bell className="w-6 h-6 text-white" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-white">SmartNotice</span>
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center italic font-black text-2xl shadow-lg shadow-blue-500/20">N</div>
+          <span className="font-bold text-xl tracking-tighter text-white uppercase italic">SmartNotice</span>
         </div>
         <button 
-          onClick={signInWithGoogle}
-          className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full transition-all backdrop-blur-sm"
+          onClick={onStart}
+          className="px-8 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full transition-all backdrop-blur-sm text-[10px] uppercase font-black tracking-widest"
         >
-          Sign In
+          Portal Login
         </button>
       </nav>
 
@@ -36,26 +32,26 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-black uppercase tracking-widest mb-6">
               <Zap className="w-3 h-3" />
-              AI-Powered Campus Management
+              AI-Powered Campus Feed
             </div>
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tight text-white mb-6 uppercase italic leading-[0.9]">
               The Future of <span className="text-blue-500">Notice Boards</span> is here.
             </h1>
-            <p className="text-slate-400 text-lg mb-10 max-w-lg leading-relaxed">
-              Streamline college communication with AI-generated summaries, smart prioritization, and real-time tracking. No more missed deadlines.
+            <p className="text-slate-500 text-lg mb-10 max-w-lg leading-relaxed font-medium">
+              Streamline college communication with AI-generated summaries, smart prioritization, and real-time tracking. Zero latency. Zero missed deadlines.
             </p>
             <div className="flex flex-wrap gap-4">
               <button 
-                onClick={signInWithGoogle}
-                className="btn-primary group"
+                onClick={onStart}
+                className="btn-primary flex items-center gap-2 px-10 py-5"
               >
-                Get Started Now
-                <ChevronRight className="w-4 h-4 inline-block ml-2 group-hover:translate-x-1 transition-transform" />
+                Access Portal
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              <button className="px-6 py-3 text-slate-300 hover:text-white transition-colors">
-                View Demo
+              <button className="px-8 py-5 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
+                System Overview
               </button>
             </div>
 
