@@ -39,7 +39,8 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "viewCount": { "type": "number" },
-        "isPinned": { "type": "boolean" }
+        "isPinned": { "type": "boolean" },
+        "extractedText": { "type": "string", "description": "Text content extracted from attachments using AI OCR/Parsing" }
       },
       "required": ["title", "description", "category", "audienceType", "faculty", "authorId", "createdAt"]
     }

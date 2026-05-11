@@ -134,11 +134,12 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
       let attachmentUrl = '';
       let attachmentName = '';
       let attachmentType = '';
+      let extractedText = '';
 
       if (attachment) {
         try {
           console.log(`Starting Cloudinary upload for ${attachment.name}...`);
-          toast.loading(`Uploading ${attachment.name}...`, { id: 'upload' });
+          toast.loading(`Uploading & Analyzing ${attachment.name}...`, { id: 'upload' });
           
           const result = await uploadToCloudinary(attachment);
           console.log("Cloudinary upload successful:", result);
@@ -146,8 +147,56 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
           attachmentUrl = result.secure_url;
           attachmentName = attachment.name;
           attachmentType = attachment.type;
+
+          // AI Extraction Step
+          try {
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1];
+                resolve(base64);
+              };
+              reader.readAsDataURL(attachment);
+            });
+
+            const base64Data = await base64Promise;
+
+            console.log("Starting AI text extraction...");
+            const extractionPrompt = `Extract ALL readable text from this document/image. 
+            Identify specifically: 
+            - Dates (holidays, exams, deadlines, events)
+            - Event titles
+            - Contact information
+            - Any specific instructions or schedule ranges (e.g. "from 25 May to 15 June").
+            
+            Format the output clearly for a search index. If it's a schedule, list each date and its corresponding event on a new line.`;
+
+            const aiResponse = await ai.models.generateContent({
+              model: MODELS.FLASH,
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    { text: extractionPrompt },
+                    {
+                      inlineData: {
+                        mimeType: attachment.type,
+                        data: base64Data
+                      }
+                    }
+                  ]
+                }
+              ]
+            });
+
+            extractedText = aiResponse.text || '';
+            console.log("AI Extraction complete. Length:", extractedText.length);
+          } catch (aiErr) {
+            console.error("AI Extraction failed, proceeding without it:", aiErr);
+            // We don't block the whole process if extraction fails, but we log it
+          }
           
-          toast.success("Attachment ready", { id: 'upload' });
+          toast.success("Document analyzed", { id: 'upload' });
         } catch (uploadError: any) {
           console.error("Cloudinary Upload Error:", uploadError);
           toast.error(`Upload failed: ${uploadError.message || 'Check Cloudinary configuration'}`, { id: 'upload' });
@@ -175,6 +224,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         attachmentUrl,
         attachmentName,
         attachmentType,
+        extractedText,
         viewCount: 0,
         isPinned: false
       };

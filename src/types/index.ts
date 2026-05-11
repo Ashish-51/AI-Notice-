@@ -46,6 +46,7 @@ export interface Notice {
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentType?: string;
+  extractedText?: string;
   isPinned?: boolean;
   authorId: string;
   authorName: string;

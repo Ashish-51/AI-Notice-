@@ -138,20 +138,31 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // Create optimized context from notices - only essential info to reduce latency
-      const noticesContext = notices.slice(0, 15).map(n => 
-        `- [${n.category}] ${n.title}: ${n.summary || n.description.substring(0, 80)}${n.description.length > 80 ? '...' : ''}`
-      ).join('\n');
+      // Create optimized context from notices
+      const noticesContext = notices.slice(0, 20).map(n => {
+        let content = `- [${n.category}] ${n.title}: ${n.description}`;
+        if (n.extractedText) {
+          content += `\n  AI-EXTRACTED CONTENT: ${n.extractedText}`;
+        }
+        return content;
+      }).join('\n\n');
 
-      const systemPrompt = `You are Nexora AI, a fast Campus Assistant. 
-Answer questions using ONLY the notice data provided. 
-Be extremely concise (max 2-3 sentences).
-If data is missing, say "Information not found".
+      const systemPrompt = `You are Nexora AI, the Campus Intelligence Assistant. 
+Your primary source of truth is the NOTICES data provided below. This data includes both descriptions and AI-extracted text from official documents (PDFs/Images).
+
+STRICT RULES:
+1. Always check both the "description" and "AI-EXTRACTED CONTENT" for answers.
+2. Prioritize exact dates, schedules, and deadlines found in the extracted content.
+3. If asked about vacations, exams, or events, look specifically for date ranges (e.g., "from X to Y").
+4. If a question is about when something resumes, calculate it based on ending dates if available (e.g., if vacation ends June 15, it resumes June 16).
+5. If the information is not in the provided NOTICES, say: "The uploaded notices/documents do not contain this information."
+6. Never hallucinate or use generic knowledge about institutional policies unless explicitly stated in the notices.
+7. Be concise but extremely accurate.
 
 NOTICES:
 ${noticesContext}
 
-User: ${userMsg}`;
+User Question: ${userMsg}`;
 
       const response = await ai.models.generateContent({
         model: MODELS.FLASH,

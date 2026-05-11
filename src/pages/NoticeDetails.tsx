@@ -109,7 +109,14 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
             )}
             {notice.attachmentUrl && (
               <div className="space-y-4 pt-8 border-t border-white/5">
-                <h3 className="text-xl font-bold text-white mb-4">Attachment</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Attachment</h3>
+                  {notice.extractedText && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                      <Sparkles className="w-3 h-3" /> Nexora AI Analyzed
+                    </div>
+                  )}
+                </div>
                 
                 {notice.attachmentType?.startsWith('image/') ? (
                   <div className="rounded-2xl overflow-hidden border border-white/10 bg-slate-900/40 p-4">
