@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+// Use the user's provided API key or fallback to environment variable
+export const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBdRy2AwADanBucdbWH8KKuvf3IDKeQ5sg" || process.env.GEMINI_API_KEY || '' });
 
 export const MODELS = {
   FLASH: "gemini-3-flash-preview",
