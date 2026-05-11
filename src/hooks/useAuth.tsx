@@ -86,8 +86,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, pass: string, profileData: Omit<UserProfile, 'uid' | 'createdAt'>) => {
-    const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+    const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('firebase/auth');
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    // Trigger verification email
+    try {
+      await sendEmailVerification(userCredential.user);
+    } catch (e) {
+      console.error('Failed to send verification email:', e);
+    }
     
     if (profileData.displayName) {
       await updateProfile(userCredential.user, { displayName: profileData.displayName });

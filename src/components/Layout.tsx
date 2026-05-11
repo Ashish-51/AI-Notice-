@@ -99,7 +99,7 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]"></div>
           </div>
 
-          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
             {profile?.role === 'teacher' && (
               <button 
                 onClick={() => onNavigate('create')}
@@ -108,10 +108,6 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
                 + New Notice
               </button>
             )}
-            <div className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center relative hover:bg-slate-800 cursor-pointer transition-colors">
-              <Bell className="w-4 h-4 text-slate-400" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#020617]"></span>
-            </div>
           </div>
         </header>
 

@@ -12,7 +12,7 @@ service cloud.firestore {
     }
 
     function isEmailVerified() {
-      return request.auth.token.email_verified == true;
+      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
     function existingData() {
@@ -28,11 +28,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && getProfile().institution == 'Parul University';
+      return isSignedIn() && (getProfile().role == 'admin' || getProfile().institution == 'Parul University');
     }
 
     function isTeacher() {
-      return isSignedIn() && getProfile().role == 'teacher';
+      return isSignedIn() && (getProfile().role == 'teacher' || getProfile().role == 'admin');
     }
 
     function isValidId(id) {
@@ -55,7 +55,6 @@ service cloud.firestore {
           && (data.visibilityScope is string || data.visibilityScope == null)
           && (data.viewCount is number)
           && (data.isPinned is bool)
-          && data.createdAt == request.time
           && data.updatedAt == request.time;
     }
 
@@ -63,27 +62,43 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId 
+                    && incomingData().role != 'admin'; // Cannot self-assign admin on create
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin())
-                    && incomingData().diff(existingData()).affectedKeys().hasOnly(['displayName', 'institution', 'department', 'semester', 'staffId', 'faculty', 'role']);
+                    && (
+                      // Admin can update anything
+                      isAdmin() ||
+                      // User can update limited fields, but NOT role
+                      (request.auth.uid == userId && incomingData().diff(existingData()).affectedKeys().hasOnly(['displayName', 'institution', 'department', 'semester', 'staffId', 'faculty']) && incomingData().role == existingData().role)
+                    );
     }
 
     // 2. Notices Collection
     match /notices/{noticeId} {
       allow get: if isSignedIn();
-      
-      // We allow authenticated listing to support complex composite queries (e.g. using or()).
-      // Security is maintained via specific client-side queries and individual document read/write authorization.
       allow list: if isSignedIn();
 
-      allow create: if isSignedIn() && (isTeacher() || isAdmin()) && isValidNotice(incomingData()) && (
-        isAdmin() || incomingData().faculty == getProfile().institution
-      );
+      allow create: if (isTeacher() || isAdmin()) 
+                    && isValidNotice(incomingData()) 
+                    && incomingData().createdAt == request.time
+                    && (isAdmin() || incomingData().faculty == getProfile().institution);
 
       allow update: if isSignedIn() && (
-        (existingData().authorId == request.auth.uid && isValidNotice(incomingData())) || 
-        isAdmin()
-      ) && incomingData().diff(existingData()).affectedKeys().hasOnly(['viewCount', 'title', 'description', 'category', 'audienceType', 'department', 'semester', 'priority', 'attachmentUrl', 'attachmentName', 'attachmentType', 'updatedAt', 'isPinned']);
+        // Action: Increment Views (Any authenticated user)
+        (incomingData().diff(existingData()).affectedKeys().hasOnly(['viewCount'])) ||
+        
+        // Action: Edit (Author or Admin)
+        (
+          (existingData().authorId == request.auth.uid || isAdmin()) &&
+          isValidNotice(incomingData()) &&
+          incomingData().createdAt == existingData().createdAt &&
+          incomingData().diff(existingData()).affectedKeys().hasOnly([
+            'viewCount', 'title', 'description', 'category', 'audienceType', 
+            'department', 'semester', 'priority', 'attachmentUrl', 
+            'attachmentName', 'attachmentType', 'updatedAt', 'isPinned'
+          ])
+        )
+      );
 
       allow delete: if isSignedIn() && (existingData().authorId == request.auth.uid || isAdmin());
     }

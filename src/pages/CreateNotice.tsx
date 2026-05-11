@@ -211,7 +211,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
           <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mt-1">Authorized for {profile?.institution || 'Administrative Faculty'}</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-500 text-[10px] font-bold uppercase tracking-widest">
-           <Zap className="w-3 h-3 fill-current" /> AI Assistant Active
+           <Zap className="w-3 h-3 fill-current" /> Nexora AI Active
         </div>
       </div>
 

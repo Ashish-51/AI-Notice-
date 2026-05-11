@@ -26,7 +26,7 @@ interface Message {
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: "Hello! I'm your SmartNotice Assistant. How can I help you find information about campus notices today?" }
+    { role: 'ai', text: "Hello! I'm Nexora AI, your SmartNotice Assistant. How can I help you find information about campus notices today?" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -143,7 +143,7 @@ export default function Chatbot() {
         `- [${n.category}] ${n.title}: ${n.summary || n.description.substring(0, 80)}${n.description.length > 80 ? '...' : ''}`
       ).join('\n');
 
-      const systemPrompt = `You are a fast AI Campus Assistant. 
+      const systemPrompt = `You are Nexora AI, a fast Campus Assistant. 
 Answer questions using ONLY the notice data provided. 
 Be extremely concise (max 2-3 sentences).
 If data is missing, say "Information not found".
@@ -196,7 +196,7 @@ User: ${userMsg}`;
             {/* Header */}
             <div className="flex items-center gap-3 mb-6 shrink-0">
               <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-              <h2 className="text-lg font-black uppercase italic tracking-tighter">AI Assistant</h2>
+              <h2 className="text-lg font-black uppercase italic tracking-tighter">Nexora AI</h2>
               
               <div className="flex items-center gap-2 ml-auto">
                 <button 
@@ -232,7 +232,7 @@ User: ${userMsg}`;
                     "text-[10px] font-black uppercase tracking-widest ml-3 mb-0.5",
                     msg.role === 'ai' ? "text-indigo-400" : "text-slate-600"
                   )}>
-                    {msg.role === 'ai' ? 'Assistant' : 'User'}
+                    {msg.role === 'ai' ? 'Nexora AI' : 'User'}
                   </div>
                   <div className={cn(
                     "p-4 rounded-2xl text-xs leading-relaxed max-w-[90%]",
@@ -247,7 +247,7 @@ User: ${userMsg}`;
               ))}
               {loading && (
                 <div className="flex flex-col gap-1 items-start">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400 ml-3">Assistant</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400 ml-3">Nexora AI</div>
                   <div className="bg-indigo-600/10 border border-indigo-500/20 p-4 rounded-2xl rounded-tl-none flex gap-1.5">
                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
