@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with role-based access control information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "student"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Notice": {
+      "title": "Smart Notice",
+      "description": "A notice published by a teacher with AI-enhanced content.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "summary": { "type": "string" },
+        "simplified": { "type": "string" },
+        "category": { "type": "string", "enum": ["Exam", "Event", "Placement", "Assignment", "Other"] },
+        "priority": { "type": "string", "enum": ["Normal", "Important", "Urgent"] },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "isPinned": { "type": "boolean" },
+        "attachmentUrl": { "type": "string" },
+        "formLink": { "type": "string" },
+        "viewCount": { "type": "number" }
+      },
+      "required": ["title", "description", "category", "priority", "expiryDate", "authorId"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles."
+    },
+    "notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "Stores notices."
+    }
+  }
+}
