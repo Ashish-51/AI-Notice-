@@ -2,54 +2,56 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "User profile with role-based access control information.",
+      "description": "Stores user profile information including role and academic details.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["teacher", "student"] },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher"] },
         "institution": { "type": "string" },
         "department": { "type": "string" },
+        "semester": { "type": "string" },
         "staffId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role", "institution", "department"]
+      "required": ["uid", "email", "role"]
     },
     "Notice": {
-      "title": "Smart Notice",
-      "description": "A notice published by a teacher with AI-enhanced content.",
+      "title": "Notice",
+      "description": "Represents a university notice or announcement.",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
         "description": { "type": "string" },
-        "summary": { "type": "string" },
-        "simplified": { "type": "string" },
-        "category": { "type": "string", "enum": ["Assignment", "Event", "Exam", "Workshop", "Holiday", "Placement", "Urgent", "Circular", "Competition", "Seminar", "Club Activity", "Other"] },
+        "category": { "type": "string", "enum": ["Academics", "Events & Activities", "Career & Placements", "Holidays & Leave", "General"] },
+        "audienceType": { "type": "string", "enum": ["Everyone", "Entire Faculty", "Specific Course", "Specific Semester"] },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "semester": { "type": "string" },
         "priority": { "type": "string", "enum": ["Normal", "Important", "Urgent"] },
-        "expiryDate": { "type": "string", "format": "date-time" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "isPinned": { "type": "boolean" },
         "attachmentUrl": { "type": "string" },
         "attachmentName": { "type": "string" },
         "attachmentType": { "type": "string" },
-        "formLink": { "type": "string" },
-        "viewCount": { "type": "number" }
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "uploaderRole": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "viewCount": { "type": "number" },
+        "isPinned": { "type": "boolean" }
       },
-      "required": ["title", "description", "category", "priority", "expiryDate", "authorId"]
+      "required": ["title", "description", "category", "audienceType", "faculty", "authorId", "createdAt"]
     }
   },
   "firestore": {
-    "users/{userId}": {
+    "/users/{userId}": {
       "schema": "User",
-      "description": "Stores user profiles."
+      "description": "Collection of user profiles."
     },
-    "notices/{noticeId}": {
+    "/notices/{noticeId}": {
       "schema": "Notice",
-      "description": "Stores notices."
+      "description": "Collection of all university notices."
     }
   }
 }

@@ -15,32 +15,13 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { UserRole } from '../types';
+import { INSTITUTIONS, DEPARTMENTS } from '../constants';
 import toast, { Toaster } from 'react-hot-toast';
 
 const TEACHER_ACCESS_CODE = 'PARUL01';
 
 const STUDENT_EMAIL_REGEX = /^\d+@goa\.paruluniversity\.ac\.in$/;
 const TEACHER_EMAIL_REGEX = /^.+@goa\.paruluniversity\.ac\.in$/;
-
-const INSTITUTIONS = [
-  "Parul University",
-  "Faculty of Information Technology",
-  "Faculty of Engineering",
-  "Faculty of IT & Computer Science",
-  "Faculty of Nursing",
-  "Faculty of Pharmacy",
-  "Faculty of Management"
-];
-
-const DEPARTMENTS: Record<string, string[]> = {
-  "Faculty of Information Technology": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
-  "Faculty of Engineering": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
-  "Faculty of IT & Computer Science": ["BTech", "MTech", "MCA", "BCA", "Diploma in CS"],
-  "Faculty of Nursing": ["GNM", "BSc Nursing", "OT Technology (OTT)", "Physiotherapy"],
-  "Faculty of Pharmacy": ["D.Pharm", "B.Pharm", "M.Pharm", "Pharmaceutical Sciences"],
-  "Faculty of Management": ["MBA", "BBA", "BMS", "Finance", "HR", "Marketing"],
-  "Parul University": ["General Administration", "Academic Office", "Student Services", "Examination Cell"]
-};
 
 export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const { signUpWithEmail, completeProfile, user } = useAuth();
@@ -58,6 +39,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
     confirmPassword: '',
     institution: '',
     department: '',
+    semester: '',
     staffId: '',
     accessCode: ''
   });
@@ -108,7 +90,8 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           institution: formData.institution,
           email: formData.email.trim(),
           staffId: role === 'teacher' ? formData.staffId : undefined,
-          department: role === 'student' ? formData.department : 'General'
+          department: role === 'student' ? formData.department : 'General',
+          semester: role === 'student' ? formData.semester : undefined
         });
       } else {
         await signUpWithEmail(formData.email.trim(), formData.password, {
@@ -117,7 +100,8 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           institution: formData.institution,
           email: formData.email.trim(),
           staffId: role === 'teacher' ? formData.staffId : undefined,
-          department: role === 'student' ? formData.department : 'General'
+          department: role === 'student' ? formData.department : 'General',
+          semester: role === 'student' ? formData.semester : undefined
         });
       }
       toast.success("Account Created Successfully 🎉");
@@ -296,22 +280,40 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                     </div>
 
                     {role === 'student' && (
-                      <div className="md:col-span-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Department</label>
-                        <div className="relative group">
-                          <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                          <select 
-                            required
-                            disabled={!formData.institution}
-                            value={formData.department}
-                            onChange={(e) => setFormData({...formData, department: e.target.value})}
-                            className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none disabled:opacity-50"
-                          >
-                            <option value="">Select Dept.</option>
-                            {availableDepartments.map(dept => <option key={dept} value={dept} className="bg-slate-900">{dept}</option>)}
-                          </select>
+                      <>
+                        <div className="md:col-span-1">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Department</label>
+                          <div className="relative group">
+                            <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <select 
+                              required
+                              disabled={!formData.institution}
+                              value={formData.department}
+                              onChange={(e) => setFormData({...formData, department: e.target.value})}
+                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none disabled:opacity-50"
+                            >
+                              <option value="">Select Dept.</option>
+                              {availableDepartments.map(dept => <option key={dept} value={dept} className="bg-slate-900">{dept}</option>)}
+                            </select>
+                          </div>
                         </div>
-                      </div>
+
+                        <div className="md:col-span-1">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Semester</label>
+                          <div className="relative group">
+                            <GraduationCap className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <select 
+                              required
+                              value={formData.semester}
+                              onChange={(e) => setFormData({...formData, semester: e.target.value})}
+                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none"
+                            >
+                              <option value="">Select Sem.</option>
+                              {['1', '2', '3', '4', '5', '6', '7', '8'].map(s => <option key={s} value={s} className="bg-slate-900">Semester {s}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </>
                     )}
 
                     {!isOAuth && (

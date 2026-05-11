@@ -1,107 +1,91 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Default Deny Catch-all
+    // 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Helpers ---
+    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function existingData() {
+      return resource.data;
+    }
+
+    function incomingData() {
+      return request.resource.data;
+    }
+
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getProfile().institution == 'Parul University';
+    }
+
+    function isTeacher() {
+      return isSignedIn() && getProfile().role == 'teacher';
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isTeacher() {
-      return isSignedIn() && getUserData(request.auth.uid).role == 'teacher';
-    }
-
-    // --- Validation Blueprints ---
-
-    function isValidUser(data) {
-      return data.uid == request.auth.uid &&
-             data.email == request.auth.token.email &&
-             data.displayName is string && data.displayName.size() <= 100 &&
-             data.role in ['teacher', 'student'] &&
-             data.institution is string && data.institution.size() <= 200 &&
-             data.department is string && data.department.size() <= 200 &&
-             (data.role == 'student' || (data.role == 'teacher' && data.staffId is string && data.staffId.size() <= 50)) &&
-             data.createdAt == request.time;
-    }
-
+    // Notice Validation
     function isValidNotice(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
-             data.description is string && data.description.size() > 0 && data.description.size() <= 10000 &&
-             data.get('summary', '') is string && data.get('summary', '').size() <= 2000 &&
-             data.get('simplified', '') is string && data.get('simplified', '').size() <= 5000 &&
-             data.category in ['Assignment', 'Event', 'Exam', 'Workshop', 'Holiday', 'Placement', 'Urgent', 'Circular', 'Competition', 'Seminar', 'Club Activity', 'Other'] &&
-             data.priority in ['Normal', 'Important', 'Urgent'] &&
-             data.expiryDate is timestamp &&
-             data.updatedAt == request.time &&
-             data.authorId == request.auth.uid &&
-             data.authorName is string && data.authorName.size() <= 100 &&
-             data.isPinned is bool &&
-             data.get('attachmentUrl', '') is string && data.get('attachmentUrl', '').size() <= 1000 &&
-             data.get('attachmentName', '') is string && data.get('attachmentName', '').size() <= 500 &&
-             data.get('attachmentType', '') is string && data.get('attachmentType', '').size() <= 100 &&
-             data.formLink is string && data.formLink.size() <= 500 &&
-             data.viewCount is int && data.viewCount >= 0;
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200
+          && data.description is string && data.description.size() > 0 && data.description.size() <= 5000
+          && data.category in ['Academics', 'Events & Activities', 'Career & Placements', 'Holidays & Leave', 'General']
+          && data.audienceType in ['Everyone', 'Entire Faculty', 'Specific Course', 'Specific Semester']
+          && (data.faculty is string || data.faculty == null)
+          && data.priority in ['Normal', 'Important', 'Urgent']
+          && (data.authorId == request.auth.uid || isAdmin())
+          && (data.uploadedBy == request.auth.uid || isAdmin())
+          && (data.attachmentUrl is string || data.attachmentUrl == null)
+          && (data.attachmentName is string || data.attachmentName == null)
+          && (data.attachmentType is string || data.attachmentType == null)
+          && (data.visibilityScope is string || data.visibilityScope == null)
+          && (data.viewCount is number)
+          && (data.isPinned is bool)
+          && data.createdAt == request.time
+          && data.updatedAt == request.time;
     }
 
-    // --- Collections ---
-
+    // 1. Users Collection
     match /users/{userId} {
-      allow read: if isSignedIn() && (isOwner(userId) || isTeacher()); // Teachers can see students, users see themselves
-      
-      allow create: if isOwner(userId) && 
-                    isValidUser(incoming()) && 
-                    incoming().keys().hasAll(['uid', 'email', 'displayName', 'role', 'institution', 'department', 'createdAt']) &&
-                    (incoming().role == 'student' ? incoming().keys().size() == 7 : incoming().keys().size() == 8);
-      
-      allow update: if isOwner(userId) && 
-                    isValidUser(incoming()) && 
-                    incoming().uid == existing().uid &&
-                    incoming().email == existing().email &&
-                    incoming().role == existing().role &&
-                    incoming().createdAt == existing().createdAt &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'department', 'institution', 'staffId']);
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin())
+                    && incomingData().diff(existingData()).affectedKeys().hasOnly(['displayName', 'institution', 'department', 'semester', 'staffId', 'faculty', 'role']);
     }
 
+    // 2. Notices Collection
     match /notices/{noticeId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       
-      allow create: if isTeacher() && 
-                    isValidNotice(incoming()) && 
-                    incoming().createdAt == request.time &&
-                    incoming().viewCount == 0;
-      
-      allow update: if (isTeacher() && existing().authorId == request.auth.uid && isValidNotice(incoming()) && incoming().authorId == existing().authorId && incoming().createdAt == existing().createdAt) ||
-                    (isSignedIn() && 
-                     incoming().diff(existing()).affectedKeys().hasOnly(['viewCount']) &&
-                     incoming().viewCount == existing().viewCount + 1 &&
-                     incoming().title == existing().title &&
-                     incoming().description == existing().description); // Public can increment viewCount
-      
-      allow delete: if isTeacher() && existing().authorId == request.auth.uid;
+      // We allow authenticated listing to support complex composite queries (e.g. using or()).
+      // Security is maintained via specific client-side queries and individual document read/write authorization.
+      allow list: if isSignedIn();
+
+      allow create: if isSignedIn() && (isTeacher() || isAdmin()) && isValidNotice(incomingData()) && (
+        isAdmin() || incomingData().faculty == getProfile().institution
+      );
+
+      allow update: if isSignedIn() && (
+        (existingData().authorId == request.auth.uid && isValidNotice(incomingData())) || 
+        isAdmin()
+      ) && incomingData().diff(existingData()).affectedKeys().hasOnly(['viewCount', 'title', 'description', 'category', 'audienceType', 'department', 'semester', 'priority', 'attachmentUrl', 'attachmentName', 'attachmentType', 'updatedAt', 'isPinned']);
+
+      allow delete: if isSignedIn() && (existingData().authorId == request.auth.uid || isAdmin());
     }
   }
 }

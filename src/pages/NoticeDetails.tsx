@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Eye,
   User,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { doc, updateDoc, increment } from 'firebase/firestore';
@@ -105,6 +106,44 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
                   {notice.simplified}
                 </div>
               </motion.div>
+            )}
+            {notice.attachmentUrl && (
+              <div className="space-y-4 pt-8 border-t border-white/5">
+                <h3 className="text-xl font-bold text-white mb-4">Attachment</h3>
+                
+                {notice.attachmentType?.startsWith('image/') ? (
+                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-slate-900/40 p-4">
+                    <img 
+                      src={notice.attachmentUrl} 
+                      alt={notice.attachmentName || 'Attachment'} 
+                      className="w-full h-auto max-h-[500px] object-contain rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                ) : notice.attachmentUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                   <div className="rounded-2xl overflow-hidden border border-white/10 bg-slate-900/40 p-4">
+                    <img 
+                      src={notice.attachmentUrl} 
+                      alt={notice.attachmentName || 'Attachment'} 
+                      className="w-full h-auto max-h-[500px] object-contain rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-8 border-2 border-dashed border-white/5 rounded-3xl text-center bg-slate-900/40">
+                    <Paperclip className="w-10 h-10 text-slate-700 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium">Document attached: {notice.attachmentName}</p>
+                    <a 
+                      href={notice.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all"
+                    >
+                      <Download className="w-4 h-4" /> Download Document
+                    </a>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

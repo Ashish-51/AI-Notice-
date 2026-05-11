@@ -9,23 +9,24 @@ export interface UserProfile {
   role: UserRole;
   institution?: string;
   department?: string;
+  semester?: string;
   staffId?: string;
   createdAt: Timestamp;
 }
 
 export type NoticeCategory = 
-  | 'Assignment' 
-  | 'Event' 
-  | 'Exam' 
-  | 'Workshop' 
-  | 'Holiday' 
-  | 'Placement' 
-  | 'Urgent' 
-  | 'Circular' 
-  | 'Competition' 
-  | 'Seminar' 
-  | 'Club Activity' 
-  | 'Other';
+  | 'Academics' 
+  | 'Events & Activities' 
+  | 'Career & Placements' 
+  | 'Holidays & Leave' 
+  | 'General';
+
+export type AudienceType = 
+  | 'Everyone' 
+  | 'Entire Faculty' 
+  | 'Specific Course' 
+  | 'Specific Semester';
+
 export type NoticePriority = 'Normal' | 'Important' | 'Urgent';
 
 export interface Notice {
@@ -35,17 +36,24 @@ export interface Notice {
   summary?: string;
   simplified?: string;
   category: NoticeCategory;
+  audienceType: AudienceType;
+  faculty: string;
+  department?: string;
+  semester?: string;
   priority: NoticePriority;
-  expiryDate: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  authorId: string;
-  authorName: string;
-  isPinned: boolean;
+  expiryDate?: Timestamp;
+  formLink?: string;
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentType?: string;
-  formLink?: string;
+  isPinned?: boolean;
+  authorId: string;
+  authorName: string;
+  uploadedBy?: string;
+  uploaderRole?: string;
+  visibilityScope?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
   viewCount: number;
 }
 

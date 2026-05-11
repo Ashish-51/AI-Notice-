@@ -12,25 +12,12 @@ export const auth = getAuth(app);
 let storageInstance: FirebaseStorage | null = null;
 export const getStorageInstance = () => {
   if (!storageInstance) {
-    try {
-      storageInstance = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
-    } catch (error) {
-      console.error("Firebase Storage initialization failed. Make sure Storage is enabled in the Firebase console.", error);
-      throw error;
-    }
+    storageInstance = getStorage(app);
   }
   return storageInstance;
 };
 
-// For backward compatibility with existing imports in other files
-export const storage = (() => {
-  try {
-    return getStorage(app, `gs://${firebaseConfig.storageBucket}`);
-  } catch (e) {
-    console.warn("Storage not available at module load time. Will try lazy init on use.");
-    return null as unknown as FirebaseStorage;
-  }
-})();
+export const storage = getStorage(app);
 
 async function testConnection() {
   try {
