@@ -49,9 +49,30 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
     return formData.institution ? DEPARTMENTS[formData.institution] || [] : [];
   }, [formData.institution]);
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (step === 2 && role === 'teacher') {
+      nextStep();
+    } else if (step === 1) {
+      nextStep();
+    } else {
+      handleSignup(e as any);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.name.trim() || !formData.email.trim() || !formData.institution || !formData.department) {
+      setError('Please fill in all required fields (Name, Email, Institution, Department)');
+      return;
+    }
+
+    if (role === 'student' && !formData.semester) {
+      setError('Please select your semester');
+      return;
+    }
+
     if (!isOAuth) {
       if (formData.password.length < 8) {
         setError('Password must be at least 8 characters long');
@@ -165,7 +186,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
             ))}
           </div>
 
-          <form onSubmit={handleSignup} className="mt-4">
+          <form onSubmit={handleFormSubmit} className="mt-4">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div 
@@ -355,7 +376,16 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                     )}
                   </div>
 
-                  <div className="flex gap-4 pt-4">
+                  {error && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mt-6">
+                      <div className="flex items-center gap-3 text-rose-400 text-xs font-bold leading-tight mb-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {error}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-4 mt-4">
                     <button 
                       type="button"
                       onClick={prevStep}
