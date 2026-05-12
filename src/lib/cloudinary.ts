@@ -12,8 +12,8 @@ interface CloudinaryUploadResponse {
 }
 
 export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResponse> {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dedu8l8vg';
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'smart_notice';
 
   if (!cloudName || !uploadPreset) {
     throw new Error('Cloudinary configuration is missing. Please set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.');
@@ -23,8 +23,10 @@ export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadRe
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
 
+  const resourceType = file.type === 'application/pdf' ? 'raw' : 'auto';
+
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     {
       method: 'POST',
       body: formData,

@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 
 export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBack: () => void }) {
   const { profile, user } = useAuth();
+  const [showConfirm, setShowConfirm] = React.useState(false);
   const expiryDate = notice.expiryDateTime?.toDate();
   const isExpired = expiryDate ? expiryDate < new Date() : false;
 
@@ -51,7 +52,6 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
   }, [notice.id, isExpired, profile]);
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this notice? This action is permanent.")) return;
     try {
       await deleteDoc(doc(db, 'notices', notice.id));
       toast.success("Notice deleted");
@@ -91,12 +91,31 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
         </button>
 
         {canDelete && (
-          <button 
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
-          >
-            <Trash2 className="w-4 h-4" /> Delete Notice
-          </button>
+          <div className="relative flex">
+            {showConfirm && (
+                 <div className="absolute top-full mt-2 right-0 bg-[var(--card-bg)] border border-rose-500/20 p-2 rounded-xl shadow-xl flex items-center gap-2 w-max z-50">
+                   <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mx-2">Confirm?</span>
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setShowConfirm(false); handleDelete(); }}
+                     className="px-3 py-1 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase"
+                   >
+                     Yes
+                   </button>
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
+                     className="px-3 py-1 bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] rounded-lg text-[9px] font-black uppercase"
+                   >
+                     No
+                   </button>
+                 </div>
+               )}
+            <button 
+              onClick={() => setShowConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Notice
+            </button>
+          </div>
         )}
       </div>
 
@@ -187,14 +206,47 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
                     </div>
                     <p className="text-[var(--text-primary)] font-black italic uppercase tracking-tight mb-2 truncate max-w-full px-4">{notice.attachmentName}</p>
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-widest mb-8 opacity-50">Official Document Interface</p>
-                    <a 
-                      href={notice.attachmentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-3 px-10 py-4 bg-[var(--text-primary)] text-[var(--bg-main)] font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl text-[10px]"
-                    >
-                      <Download className="w-4 h-4" /> Download File
-                    </a>
+                    
+                    <div className="flex items-center justify-center gap-4">
+                      <a 
+                        href={(() => {
+                          let url = notice.attachmentUrl;
+                          if (url.includes('/raw/upload/')) {
+                            return url.replace('/fl_attachment/', '/');
+                          }
+                          return url;
+                        })()}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-3 px-10 py-4 bg-[var(--bg-surface-alt)] text-[var(--text-primary)] border border-[var(--border-color)] font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl text-[10px] hover:bg-[var(--bg-surface)]"
+                      >
+                        <ExternalLink className="w-4 h-4" /> Open PDF
+                      </a>
+                      <a 
+                        href={(() => {
+                          let url = notice.attachmentUrl;
+                          
+                          // If it's a raw upload (like PDFs), Cloudinary does not support image transformations like fl_attachment.
+                          // Remove fl_attachment if it somehow got in there (due to buggy previous saves)
+                          if (url.includes('/raw/upload/')) {
+                            return url.replace('/fl_attachment/', '/');
+                          }
+                          
+                          // For images, we can add fl_attachment to force download instead of viewing in browser
+                          if (url.includes('/image/upload/') && !url.includes('fl_attachment')) {
+                            return url.replace('/image/upload/', '/image/upload/fl_attachment/');
+                          }
+                          
+                          return url;
+                        })()}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="inline-flex items-center gap-3 px-10 py-4 bg-[var(--text-primary)] text-[var(--bg-main)] font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl text-[10px]"
+                      >
+                        <Download className="w-4 h-4" /> Download PDF
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>

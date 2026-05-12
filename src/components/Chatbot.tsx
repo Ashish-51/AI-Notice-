@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNotices } from '../hooks/useNotices';
-import { ai, MODELS } from '../lib/gemini';
+import { ai, MODELS, isQuotaExceeded } from '../lib/gemini';
 import { Logo } from './Logo';
 import { 
   MessageSquare, 
@@ -266,8 +266,13 @@ User Question: ${textToSend}`;
         }, 300);
       }
     } catch (err: any) {
-      console.error(err);
+      console.warn('Chatbot AI Error:', err);
       let errorMsg = "I'm having trouble connecting. Please try again!";
+      
+      if (isQuotaExceeded(err)) {
+        errorMsg = "I've reached my daily message limit (Quota Exceeded). Please try again in 24 hours or check back later!";
+      }
+      
       setMessages(prev => [...prev, { role: 'ai', text: errorMsg }]);
     } finally {
       setLoading(false);
@@ -410,9 +415,9 @@ User Question: ${textToSend}`;
         setIsSpeaking(false);
       }
     } catch (err: any) {
-      console.error('TTS error:', err);
+      console.warn('TTS error:', err);
       setIsSpeaking(false);
-      if (err.message?.includes('429')) {
+      if (isQuotaExceeded(err)) {
         setTtsEnabled(false);
       }
     }

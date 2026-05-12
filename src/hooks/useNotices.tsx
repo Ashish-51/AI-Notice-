@@ -23,15 +23,13 @@ export function useNotices() {
 
   const deleteNotice = useCallback(async (noticeId: string, attachmentUrl?: string) => {
     if (!user) return;
+    const toastId = toast.loading("Deleting notice...");
     try {
       await deleteDoc(doc(db, 'notices', noticeId));
-      toast.success("Notice deleted successfully");
-      // Cloudinary deletion usually requires server-side logic (API secret), 
-      // but if we had a cloud function we would call it here.
-      // For now we just remove from Firestore as per basic requirement.
+      toast.success("Notice deleted successfully", { id: toastId });
     } catch (error) {
-      console.error("Delete Error:", error);
-      toast.error("Failed to delete notice");
+      toast.error("Failed to delete notice", { id: toastId });
+      handleFirestoreError(error, OperationType.DELETE, `notices/${noticeId}`);
     }
   }, [user]);
 

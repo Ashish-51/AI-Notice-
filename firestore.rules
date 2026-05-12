@@ -20,13 +20,15 @@ service cloud.firestore {
     }
 
     function hasRole(role) {
-      let profileDoc = getProfile();
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (profileDoc.get('data', {}).get('role', 'none') == role || profileDoc.get('data', {}).get('role', 'none') == 'admin');
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role || 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     function isAdmin() {
       return isSignedIn() && (
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'admin')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.institution == 'Parul University')) ||
         request.auth.token.email.matches('.*@paruluniversity\\.ac\\.in$')
       );
     }

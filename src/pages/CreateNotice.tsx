@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../lib/firebase';
-import { ai, MODELS } from '../lib/gemini';
+import { ai, MODELS, isQuotaExceeded } from '../lib/gemini';
 import { 
   collection, 
   addDoc, 
@@ -90,9 +90,9 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         }));
       }
     } catch (err: any) {
-      console.error('AI Suggestion Error:', err);
-      if (err.message?.includes('429') || err.status === 429) {
-        toast.error("AI Quota Exceeded. Using manual settings.", {
+      console.warn('AI Suggestion Error:', err);
+      if (isQuotaExceeded(err)) {
+        toast.error("AI Quota Exceeded. Please try again later or use manual settings.", {
           icon: '⏳',
         });
       } else {
@@ -139,51 +139,89 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
 
           // AI Extraction Step
           try {
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve) => {
-              reader.onload = () => {
-                const base64 = (reader.result as string).split(',')[1];
-                resolve(base64);
-              };
-              reader.readAsDataURL(attachment);
-            });
-
-            const base64Data = await base64Promise;
-
-            console.log("Starting AI text extraction...");
-            const extractionPrompt = `Extract ALL readable text from this document/image. 
-            Identify specifically: 
-            - Dates (holidays, exams, deadlines, events)
-            - Event titles
-            - Contact information
-            - Any specific instructions or schedule ranges (e.g. "from 25 May to 15 June").
+            console.log("Starting local text extraction...");
+            let localExtractedText = '';
             
-            Format the output clearly for a search index. If it's a schedule, list each date and its corresponding event on a new line.`;
+            if (attachment.type === 'application/pdf') {
+              const { extractTextFromPDF } = await import('../lib/extractor');
+              localExtractedText = await extractTextFromPDF(attachment);
+            } else if (attachment.type.startsWith('image/')) {
+              const { extractTextFromImage } = await import('../lib/extractor');
+              localExtractedText = await extractTextFromImage(attachment);
+            }
 
-            const aiResponse = await ai.models.generateContent({
-              model: MODELS.FLASH,
-              contents: [
-                {
-                  role: 'user',
-                  parts: [
-                    { text: extractionPrompt },
-                    {
-                      inlineData: {
-                        mimeType: attachment.type,
-                        data: base64Data
-                      }
-                    }
-                  ]
-                }
-              ]
-            });
+            console.log("Local extraction complete. Length:", localExtractedText.length);
+            
+            // Still use Gemini to structure the text if needed, or just store the extracted text directly
+            if (localExtractedText.trim().length > 0) {
+              const extractionPrompt = `Here is the raw extracted text from a document/image. 
+              Please structure it clearly for a search index. If it contains a schedule, list each date and its corresponding event on a new line. 
+              Identify specifically: 
+              - Dates (holidays, exams, deadlines, events)
+              - Event titles
+              - Contact information
+              - Any specific instructions or schedule ranges.
+              
+              RAW TEXT:
+              ${localExtractedText}`;
 
-            extractedText = aiResponse.text || '';
-            console.log("AI Extraction complete. Length:", extractedText.length);
+              const aiResponse = await ai.models.generateContent({
+                model: MODELS.FLASH,
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [{ text: extractionPrompt }]
+                  }
+                ]
+              });
+
+              extractedText = aiResponse.text || localExtractedText; // Fallback to raw if AI fails to return text
+            } else {
+               // Fallback to original Base64 logic if local extraction yields nothing
+               const reader = new FileReader();
+               const base64Promise = new Promise<string>((resolve) => {
+                 reader.onload = () => {
+                   const base64 = (reader.result as string).split(',')[1];
+                   resolve(base64);
+                 };
+                 reader.readAsDataURL(attachment);
+               });
+               
+               const base64Data = await base64Promise;
+               const extractionPrompt = `Extract ALL readable text from this document/image. 
+               Identify specifically: 
+               - Dates (holidays, exams, deadlines, events)
+               - Event titles
+               - Contact information
+               - Any specific instructions or schedule ranges (e.g. "from 25 May to 15 June").
+               
+               Format the output clearly for a search index. If it's a schedule, list each date and its corresponding event on a new line.`;
+
+               const aiResponse = await ai.models.generateContent({
+                 model: MODELS.FLASH,
+                 contents: [
+                   {
+                     role: 'user',
+                     parts: [
+                       { text: extractionPrompt },
+                       {
+                         inlineData: {
+                           mimeType: attachment.type,
+                           data: base64Data
+                         }
+                       }
+                     ]
+                   }
+                 ]
+               });
+
+               extractedText = aiResponse.text || '';
+            }
+            console.log("Final Extracted Text Length:", extractedText.length);
           } catch (aiErr: any) {
-            console.error("AI Extraction failed:", aiErr);
-            if (aiErr.message?.includes('429')) {
-              toast.error("AI Extraction quota reached. Using manual description only.", { id: 'upload' });
+            console.warn("AI Extraction failed:", aiErr);
+            if (isQuotaExceeded(aiErr)) {
+              toast.error("AI Extraction quota reached. Please use manual description.", { id: 'upload' });
             } else {
               toast.error("AI Analysis skipped due to technical issues.", { id: 'upload' });
             }

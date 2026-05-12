@@ -25,6 +25,7 @@ interface NoticeCardProps {
 
 export default function NoticeCard({ notice, onClick, onDelete }: NoticeCardProps) {
   const { profile, user } = useAuth();
+  const [showConfirm, setShowConfirm] = React.useState(false);
   
   const canDelete = user && (
     profile?.role === 'admin' ||
@@ -139,26 +140,59 @@ export default function NoticeCard({ notice, onClick, onDelete }: NoticeCardProp
         </button>
         <div className="flex items-center gap-2">
            {canDelete && (
-             <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onDelete && window.confirm("Are you sure you want to delete this notice? This action is permanent.")) {
-                    onDelete(e);
-                  }
-                }}
-                className="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/10 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all mr-2"
-             >
-                <Trash2 className="w-4 h-4" />
-             </button>
+             <div className="relative flex">
+               {showConfirm && (
+                 <div className="absolute bottom-full mb-2 right-0 bg-[var(--card-bg)] border border-rose-500/20 p-2 rounded-xl shadow-xl flex items-center gap-2 w-max z-50">
+                   <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mx-2">Confirm?</span>
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setShowConfirm(false); if (onDelete) onDelete(e); }}
+                     className="px-3 py-1 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase"
+                   >
+                     Yes
+                   </button>
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
+                     className="px-3 py-1 bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] rounded-lg text-[9px] font-black uppercase"
+                   >
+                     No
+                   </button>
+                 </div>
+               )}
+               <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowConfirm(true);
+                  }}
+                  className="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/10 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all mr-2"
+               >
+                  <Trash2 className="w-4 h-4" />
+               </button>
+             </div>
            )}
            <div className="w-8 h-8 rounded-full bg-[var(--bg-surface-alt)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-blue-500 transition-colors">
               <Eye className="w-4 h-4" />
            </div>
            {notice.attachmentUrl && (
               <a 
-                href={notice.attachmentUrl} 
+                href={(() => {
+                  let url = notice.attachmentUrl;
+                  
+                  // If it's a raw upload (like PDFs), Cloudinary does not support image transformations like fl_attachment.
+                  // Remove fl_attachment if it somehow got in there (due to buggy previous saves)
+                  if (url.includes('/raw/upload/')) {
+                    return url.replace('/fl_attachment/', '/');
+                  }
+                  
+                  // For images, we can add fl_attachment to force download instead of viewing in browser
+                  if (url.includes('/image/upload/') && !url.includes('fl_attachment')) {
+                    return url.replace('/image/upload/', '/image/upload/fl_attachment/');
+                  }
+                  
+                  return url;
+                })()} 
+                download
                 target="_blank" 
-                rel="no-referrer"
+                rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-lg"
               >
