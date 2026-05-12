@@ -174,22 +174,7 @@ export default function NoticeCard({ notice, onClick, onDelete }: NoticeCardProp
            </div>
            {notice.attachmentUrl && (
               <a 
-                href={(() => {
-                  let url = notice.attachmentUrl;
-                  
-                  // If it's a raw upload (like PDFs), Cloudinary does not support image transformations like fl_attachment.
-                  // Remove fl_attachment if it somehow got in there (due to buggy previous saves)
-                  if (url.includes('/raw/upload/')) {
-                    return url.replace('/fl_attachment/', '/');
-                  }
-                  
-                  // For images, we can add fl_attachment to force download instead of viewing in browser
-                  if (url.includes('/image/upload/') && !url.includes('fl_attachment')) {
-                    return url.replace('/image/upload/', '/image/upload/fl_attachment/');
-                  }
-                  
-                  return url;
-                })()} 
+                href={notice.attachmentUrl.replace(/\/fl_attachment[^/]*\//i, '/')} 
                 download
                 target="_blank" 
                 rel="noreferrer"

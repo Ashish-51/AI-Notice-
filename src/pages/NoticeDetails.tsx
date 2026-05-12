@@ -209,13 +209,7 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
                     
                     <div className="flex items-center justify-center gap-4">
                       <a 
-                        href={(() => {
-                          let url = notice.attachmentUrl;
-                          if (url.includes('/raw/upload/')) {
-                            return url.replace('/fl_attachment/', '/');
-                          }
-                          return url;
-                        })()}
+                        href={notice.attachmentUrl.replace(/\/fl_attachment[^/]*\//i, '/')}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-3 px-10 py-4 bg-[var(--bg-surface-alt)] text-[var(--text-primary)] border border-[var(--border-color)] font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl text-[10px] hover:bg-[var(--bg-surface)]"
@@ -223,22 +217,7 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
                         <ExternalLink className="w-4 h-4" /> Open PDF
                       </a>
                       <a 
-                        href={(() => {
-                          let url = notice.attachmentUrl;
-                          
-                          // If it's a raw upload (like PDFs), Cloudinary does not support image transformations like fl_attachment.
-                          // Remove fl_attachment if it somehow got in there (due to buggy previous saves)
-                          if (url.includes('/raw/upload/')) {
-                            return url.replace('/fl_attachment/', '/');
-                          }
-                          
-                          // For images, we can add fl_attachment to force download instead of viewing in browser
-                          if (url.includes('/image/upload/') && !url.includes('fl_attachment')) {
-                            return url.replace('/image/upload/', '/image/upload/fl_attachment/');
-                          }
-                          
-                          return url;
-                        })()}
+                        href={notice.attachmentUrl.replace(/\/fl_attachment[^/]*\//i, '/')}
                         target="_blank"
                         rel="noreferrer"
                         download
@@ -299,7 +278,7 @@ export default function NoticeDetails({ notice, onBack }: { notice: Notice, onBa
               )}
               {notice.attachmentUrl && (
                 <a 
-                  href={notice.attachmentUrl}
+                  href={notice.attachmentUrl.replace(/\/fl_attachment[^/]*\//i, '/')}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full bg-[var(--bg-surface-alt)] hover:bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl flex flex-col items-center justify-center p-6 transition-all border border-[var(--border-color)] group no-underline shadow-xl"

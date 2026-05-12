@@ -23,7 +23,8 @@ export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadRe
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
 
-  const resourceType = file.type === 'application/pdf' ? 'raw' : 'auto';
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const resourceType = isPdf ? 'raw' : 'auto';
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
