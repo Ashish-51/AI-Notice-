@@ -22,7 +22,8 @@ import {
   FileUp,
   Users,
   Building2,
-  BookOpen
+  BookOpen,
+  Link as LinkIcon
 } from 'lucide-react';
 import { NoticeCategory, NoticePriority, OperationType, AudienceType } from '../types';
 import { handleFirestoreError } from '../lib/error-handler';
@@ -41,6 +42,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    formLink: '',
     category: 'General' as NoticeCategory,
     audienceType: 'Entire Faculty' as AudienceType,
     faculty: '',
@@ -239,6 +241,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
       const noticeData = {
         title: formData.title,
         description: formData.description,
+        formLink: formData.formLink,
         category: formData.category,
         audienceType: formData.audienceType,
         faculty: formData.faculty || 'Parul University',
@@ -332,6 +335,19 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Break down your announcement here. Start with essential info then details. AI assistance will automatically check for clarity."
                 className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-[2.5rem] px-8 py-8 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-[var(--text-primary)] leading-relaxed placeholder:text-[var(--text-secondary)]/30"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 flex items-center gap-2">
+                <LinkIcon className="w-3 h-3" /> External Link (Optional)
+              </label>
+              <input 
+                type="url"
+                value={formData.formLink}
+                onChange={(e) => setFormData(prev => ({ ...prev, formLink: e.target.value }))}
+                placeholder="https://forms.gle/..."
+                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-[2rem] px-8 py-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30"
               />
             </div>
 
