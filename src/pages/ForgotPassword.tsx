@@ -32,9 +32,9 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
       {/* Soft Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-slate-950 to-indigo-900/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-[var(--bg-main)] to-indigo-900/10 pointer-events-none" />
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
@@ -43,15 +43,15 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
       >
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-10 text-[10px] font-black uppercase tracking-[0.3em] group ml-4"
+          className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-10 text-[10px] font-black uppercase tracking-[0.3em] group ml-4"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> BACK TO LOGIN
         </button>
 
-        <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-10 shadow-2xl">
+        <div className="bg-[var(--card-bg)] backdrop-blur-2xl border border-[var(--border-color)] rounded-[3rem] p-10 shadow-2xl dark:shadow-none">
           <div className="text-center mb-10">
-            <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Reset Access</h1>
-            <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Secure Recovery Protocol</p>
+            <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-[var(--text-primary)] to-[var(--text-secondary)] bg-clip-text text-transparent">Reset Access</h1>
+            <p className="text-[var(--text-secondary)] font-bold uppercase tracking-[0.3em] text-[10px] opacity-70">Secure Recovery Protocol</p>
           </div>
 
           {sent ? (
@@ -60,14 +60,14 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-6"
             >
-              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/10">
+              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/10 dark:shadow-none">
                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
-              <h2 className="text-2xl font-black italic text-white uppercase tracking-tight mb-3">Transmission Successful</h2>
-              <p className="text-slate-500 text-sm font-medium mb-10 px-4">Password reset link sent to your email <span className="text-white block mt-1">{email}</span></p>
+              <h2 className="text-2xl font-black italic text-[var(--text-primary)] uppercase tracking-tight mb-3">Transmission Successful</h2>
+              <p className="text-[var(--text-secondary)] text-sm font-medium mb-10 px-4">Password reset link sent to your email <span className="text-[var(--text-primary)] block mt-1">{email}</span></p>
               <button 
                 onClick={onBack}
-                className="w-full bg-slate-100 text-slate-950 font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-white transition-all transform active:scale-95"
+                className="w-full bg-[var(--text-primary)] text-[var(--bg-main)] font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest transition-all transform active:scale-95"
               >
                 RETURN TO GATEWAY
               </button>
@@ -75,16 +75,16 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
           ) : (
             <form onSubmit={handleReset} className="space-y-6">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Registered Campus Email</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block opacity-70">Registered Campus Email</label>
                 <div className="relative group">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors opacity-50" />
                   <input 
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@goa.paruluniversity.ac.in"
-                    className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-white font-medium"
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-6 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-[var(--text-primary)] font-medium"
                   />
                 </div>
               </div>
@@ -103,7 +103,7 @@ export default function ForgotPassword({ onBack }: { onBack: () => void }) {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-100 text-slate-950 font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-white transition-all transform active:scale-95 disabled:opacity-50"
+                className="w-full bg-[var(--text-primary)] text-[var(--bg-main)] font-black h-16 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest transition-all transform active:scale-95 disabled:opacity-50 shadow-2xl dark:shadow-none"
               >
                 {loading ? "PROCESSING..." : "REQUEST RESET LINK"}
                 <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

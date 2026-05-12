@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   collection, 
   query, 
@@ -6,18 +6,34 @@ import {
   onSnapshot, 
   where,
   limit,
-  or,
-  and
+  doc,
+  deleteDoc,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Notice, OperationType } from '../types';
 import { handleFirestoreError } from '../lib/error-handler';
 import { useAuth } from './useAuth';
+import toast from 'react-hot-toast';
 
 export function useNotices() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const deleteNotice = useCallback(async (noticeId: string, attachmentUrl?: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'notices', noticeId));
+      toast.success("Notice deleted successfully");
+      // Cloudinary deletion usually requires server-side logic (API secret), 
+      // but if we had a cloud function we would call it here.
+      // For now we just remove from Firestore as per basic requirement.
+    } catch (error) {
+      console.error("Delete Error:", error);
+      toast.error("Failed to delete notice");
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!profile) {
@@ -26,61 +42,54 @@ export function useNotices() {
       return;
     }
 
-    // Dynamic filtering based on user profile
     const institution = profile.institution || '';
     const department = profile.department || '';
-    const semester = profile.semester || '';
 
-    let q;
-    
-    if (profile.role === 'teacher' || profile.institution === 'Parul University') {
-      // Teachers/Admin see faculty notices + Everyone notices
-      const faculties = [institution || 'Unknown', 'Parul University'];
-      
-      if (profile.institution === 'Parul University') {
-        q = query(
-          collection(db, 'notices'),
-          orderBy('createdAt', 'desc'),
-          limit(100)
-        );
-      } else {
-        q = query(
-          collection(db, 'notices'),
-          where('faculty', 'in', faculties),
-          orderBy('createdAt', 'desc'),
-          limit(100)
-        );
-      }
-    } else {
-      // Students visibility logic:
-      const safeInstitution = institution || 'Unknown';
-      const safeDept = department || 'None';
-      const safeSem = semester || '0';
-      
-      q = query(
-        collection(db, 'notices'),
-        or(
-          where('audienceType', '==', 'Everyone'),
-          and(where('audienceType', '==', 'Entire Faculty'), where('faculty', '==', safeInstitution)),
-          and(where('audienceType', '==', 'Specific Course'), where('faculty', '==', safeInstitution), where('department', '==', safeDept)),
-          and(where('audienceType', '==', 'Specific Semester'), where('faculty', '==', safeInstitution), where('department', '==', safeDept), where('semester', '==', safeSem))
-        ),
-        orderBy('createdAt', 'desc'),
-        limit(100)
-      );
-    }
+    // We fetch a broader set of notices and filter client-side for strict control
+    // including expiry logic and the specific visibility rules requested.
+    let q = query(
+      collection(db, 'notices'),
+      orderBy('createdAt', 'desc'),
+      limit(150)
+    );
 
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
+        const now = new Date();
         const noticesData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Notice[];
-        setNotices(noticesData);
+
+        const filtered = noticesData.filter(notice => {
+          // 1. Expiry Check
+          if (notice.expiryDateTime) {
+            const expiry = notice.expiryDateTime.toDate();
+            if (expiry < now) return false;
+          }
+
+          // 2. Admin/Teacher View Logic
+          if (profile.role === 'teacher' || profile.institution === 'Parul University') {
+            // Admins see everything. Teachers see their institution notices.
+            if (profile.institution === 'Parul University') return true;
+            return notice.faculty === institution || notice.faculty === 'Parul University';
+          }
+
+          // 3. Student Visibility Logic (Strict Rule)
+          const isFacultyMatch = (notice.faculty === institution) || (notice.faculty === 'Parul University');
+          
+          if (!isFacultyMatch) return false;
+
+          const isCourseMatch = notice.department === department;
+          const isGeneralAudience = notice.audienceType === 'Everyone' || notice.audienceType === 'Entire Faculty';
+
+          return isCourseMatch || isGeneralAudience;
+        });
+
+        setNotices(filtered);
         setLoading(false);
       },
       (error) => {
-        // If it's a "missing index" error, we will log it for the user
         handleFirestoreError(error, OperationType.LIST, 'notices');
         setLoading(false);
       }
@@ -89,5 +98,5 @@ export function useNotices() {
     return () => unsubscribe();
   }, [profile]);
 
-  return { notices, loading };
+  return { notices, loading, deleteNotice };
 }

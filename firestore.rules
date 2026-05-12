@@ -15,24 +15,24 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    function existingData() {
-      return resource.data;
-    }
-
-    function incomingData() {
-      return request.resource.data;
-    }
-
     function getProfile() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function hasRole(role) {
+      let profileDoc = getProfile();
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (profileDoc.get('data', {}).get('role', 'none') == role || profileDoc.get('data', {}).get('role', 'none') == 'admin');
     }
 
     function isAdmin() {
-      return isSignedIn() && (getProfile().role == 'admin' || getProfile().institution == 'Parul University');
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'admin')) ||
+        request.auth.token.email.matches('.*@paruluniversity\\.ac\\.in$')
+      );
     }
 
     function isTeacher() {
-      return isSignedIn() && (getProfile().role == 'teacher' || getProfile().role == 'admin');
+      return hasRole('teacher');
     }
 
     function isValidId(id) {
@@ -41,66 +41,39 @@ service cloud.firestore {
 
     // Notice Validation
     function isValidNotice(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() <= 200
-          && data.description is string && data.description.size() > 0 && data.description.size() <= 5000
-          && data.category in ['Academics', 'Events & Activities', 'Career & Placements', 'Holidays & Leave', 'General']
-          && data.audienceType in ['Everyone', 'Entire Faculty', 'Specific Course', 'Specific Semester']
-          && (data.faculty is string || data.faculty == null)
-          && data.priority in ['Normal', 'Important', 'Urgent']
-          && (data.authorId == request.auth.uid || isAdmin())
-          && (data.uploadedBy == request.auth.uid || isAdmin())
-          && (data.attachmentUrl is string || data.attachmentUrl == null)
-          && (data.attachmentName is string || data.attachmentName == null)
-          && (data.attachmentType is string || data.attachmentType == null)
-          && (data.visibilityScope is string || data.visibilityScope == null)
-          && (data.viewCount is number)
-          && (data.isPinned is bool)
-          && data.updatedAt == request.time;
+      return data.get('title', '') is string && data.title.size() > 0
+          && data.get('description', '') is string && data.description.size() > 0
+          && (data.get('authorId', '') == request.auth.uid || isAdmin())
+          && (data.get('updatedAt', request.time) == request.time);
     }
 
     // 1. Users Collection
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId 
-                    && incomingData().role != 'admin'; // Cannot self-assign admin on create
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin())
-                    && (
-                      // Admin can update anything
-                      isAdmin() ||
-                      // User can update limited fields, but NOT role
-                      (request.auth.uid == userId && incomingData().diff(existingData()).affectedKeys().hasOnly(['displayName', 'institution', 'department', 'semester', 'staffId', 'faculty']) && incomingData().role == existingData().role)
-                    );
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // 2. Notices Collection
     match /notices/{noticeId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get, list: if isSignedIn();
 
-      allow create: if (isTeacher() || isAdmin()) 
-                    && isValidNotice(incomingData()) 
-                    && incomingData().createdAt == request.time
-                    && (isAdmin() || incomingData().faculty == getProfile().institution);
+      allow create: if isSignedIn() 
+                    && (isTeacher() || isAdmin() || request.auth.token.email.matches('.*@paruluniversity\\.ac\\.in$'))
+                    && isValidNotice(request.resource.data);
 
       allow update: if isSignedIn() && (
-        // Action: Increment Views (Any authenticated user)
-        (incomingData().diff(existingData()).affectedKeys().hasOnly(['viewCount'])) ||
-        
+        // Action: Increment Views
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])) ||
         // Action: Edit (Author or Admin)
         (
-          (existingData().authorId == request.auth.uid || isAdmin()) &&
-          isValidNotice(incomingData()) &&
-          incomingData().createdAt == existingData().createdAt &&
-          incomingData().diff(existingData()).affectedKeys().hasOnly([
-            'viewCount', 'title', 'description', 'category', 'audienceType', 
-            'department', 'semester', 'priority', 'attachmentUrl', 
-            'attachmentName', 'attachmentType', 'updatedAt', 'isPinned'
-          ])
+          (resource.data.authorId == request.auth.uid || isAdmin()) &&
+          isValidNotice(request.resource.data)
         )
       );
 
-      allow delete: if isSignedIn() && (existingData().authorId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
   }
 }

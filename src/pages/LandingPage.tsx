@@ -2,10 +2,12 @@ import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Bell, Shield, GraduationCap, ChevronRight, Zap, Clock, Search as SearchIcon } from 'lucide-react';
 import { motion } from 'motion/react';
+import ThemeToggle from '../components/ThemeToggle';
+import { Logo } from '../components/Logo';
 
 export default function LandingPage({ onStart }: { onStart: () => void }) {
   return (
-    <div className="min-h-screen bg-[#020617] selection:bg-blue-500/30 font-sans tracking-tight">
+    <div className="min-h-screen bg-[var(--bg-main)] selection:bg-blue-500/30 font-sans tracking-tight transition-colors duration-300">
       {/* Decorative Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
@@ -14,15 +16,18 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
 
       <nav className="relative z-10 flex items-center justify-between px-8 py-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center italic font-black text-2xl shadow-lg shadow-blue-500/20">N</div>
-          <span className="font-bold text-xl tracking-tighter text-white uppercase italic">SmartNotice</span>
+          <Logo className="w-10 h-10" />
+          <span className="font-bold text-xl tracking-tighter text-[var(--text-primary)] uppercase italic">SmartNotice</span>
         </div>
-        <button 
-          onClick={onStart}
-          className="px-8 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full transition-all backdrop-blur-sm text-[10px] uppercase font-black tracking-widest"
-        >
-          Portal Login
-        </button>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <button 
+            onClick={onStart}
+            className="px-8 py-2.5 bg-[var(--bg-surface)] hover:bg-[var(--nav-hover)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-full transition-all backdrop-blur-sm text-[10px] uppercase font-black tracking-widest"
+          >
+            Portal Login
+          </button>
+        </div>
       </nav>
 
       <main className="relative z-10 max-w-7xl mx-auto px-8 pt-20 pb-32">
@@ -36,10 +41,10 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
               <Zap className="w-3 h-3" />
               AI-Powered Campus Feed
             </div>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tight text-white mb-6 uppercase italic leading-[0.9]">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tight text-[var(--text-primary)] mb-6 uppercase italic leading-[0.9]">
               The Future of <span className="text-blue-500">Notice Boards</span> is here.
             </h1>
-            <p className="text-slate-500 text-lg mb-10 max-w-lg leading-relaxed font-medium">
+            <p className="text-[var(--text-secondary)] text-lg mb-10 max-w-lg leading-relaxed font-medium">
               Streamline college communication with AI-generated summaries, smart prioritization, and real-time tracking. Zero latency. Zero missed deadlines.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -50,23 +55,23 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
                 Access Portal
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              <button className="px-8 py-5 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
+              <button className="px-8 py-5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-[10px] font-black uppercase tracking-widest">
                 System Overview
               </button>
             </div>
 
-            <div className="mt-16 grid grid-cols-3 gap-8 border-t border-white/5 pt-8">
+            <div className="mt-16 grid grid-cols-3 gap-8 border-t border-[var(--border-color)] pt-8">
               <div>
-                <p className="text-3xl font-bold text-white mb-1">99%</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Efficiency</p>
+                <p className="text-3xl font-bold text-[var(--text-primary)] mb-1">99%</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-widest">Efficiency</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-white mb-1">0%</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Missed Deadlines</p>
+                <p className="text-3xl font-bold text-[var(--text-primary)] mb-1">0%</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-widest">Missed Deadlines</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-white mb-1">24/7</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Support</p>
+                <p className="text-3xl font-bold text-[var(--text-primary)] mb-1">24/7</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-widest">Support</p>
               </div>
             </div>
           </motion.div>
@@ -77,11 +82,11 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
           >
-            <div className="relative z-10 glass-card p-4 aspect-[4/3] flex items-center justify-center">
+            <div className="relative z-10 glass-card p-4 aspect-[4/3] flex items-center justify-center shadow-2xl dark:shadow-none">
               <div className="w-full max-w-sm space-y-4">
-                <div className="p-4 bg-white/5 rounded-xl border border-white/10 animate-pulse">
-                  <div className="w-32 h-4 bg-white/10 rounded mb-3"></div>
-                  <div className="w-full h-12 bg-white/10 rounded"></div>
+                <div className="p-4 bg-[var(--nav-hover)] rounded-xl border border-[var(--border-color)] animate-pulse">
+                  <div className="w-32 h-4 bg-[var(--border-color)] rounded mb-3"></div>
+                  <div className="w-full h-12 bg-[var(--border-color)] rounded"></div>
                 </div>
                 <div className="p-4 bg-blue-600/10 rounded-xl border border-blue-500/20">
                   <div className="flex items-center justify-between mb-4">

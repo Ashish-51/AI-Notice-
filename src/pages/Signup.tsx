@@ -17,6 +17,7 @@ import { cn } from '../lib/utils';
 import { UserRole } from '../types';
 import { INSTITUTIONS, DEPARTMENTS } from '../constants';
 import toast, { Toaster } from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
 
 const TEACHER_ACCESS_CODE = 'PARUL01';
 
@@ -90,7 +91,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           institution: formData.institution,
           email: formData.email.trim(),
           staffId: role === 'teacher' ? formData.staffId : undefined,
-          department: role === 'student' ? formData.department : 'General',
+          department: formData.department || 'General',
           semester: role === 'student' ? formData.semester : undefined
         });
       } else {
@@ -100,23 +101,25 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
           institution: formData.institution,
           email: formData.email.trim(),
           staffId: role === 'teacher' ? formData.staffId : undefined,
-          department: role === 'student' ? formData.department : 'General',
+          department: formData.department || 'General',
           semester: role === 'student' ? formData.semester : undefined
         });
       }
       toast.success("Account Created Successfully 🎉");
     } catch (err: any) {
-      console.error(err);
+      console.warn('Firebase Auth:', err.code);
       if (err.code === 'auth/operation-not-allowed') {
-        setError('Email/Password sign-in is not enabled in Firebase Console. Please enable it in the Authentication > Sign-in method tab.');
+        setError('Registration is currently disabled. Please enable "Email/Password" in your Firebase Auth Console.');
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Try logging in instead.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid campus email address.');
       } else if (err.code === 'auth/weak-password') {
-        setError('Password must be at least 8 characters long');
+        setError('Password must be at least 8 characters long.');
+      } else if (err.code === 'auth/invalid-credential') {
+        setError('The server rejected the registration attempt. This often happens if the Email/Password sign-in method is not enabled in the Firebase Console.');
       } else {
-        setError(err.message || 'Signup failed. Please check your credentials.');
+        setError(err.message || 'Signup failed. Please check your network connection.');
       }
       setLoading(false);
     }
@@ -126,10 +129,13 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
   const prevStep = () => setStep(prev => prev - 1);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
       <Toaster position="top-center" />
       {/* Soft Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-950 to-purple-900/20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10 pointer-events-none" />
+      <div className="absolute top-0 right-0 p-8 z-20">
+        <ThemeToggle />
+      </div>
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-purple-600/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
@@ -141,11 +147,11 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
         className="w-full max-w-xl relative z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Create Account</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Campus Notice Board Security Protocol</p>
+          <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-3 bg-gradient-to-r from-[var(--text-primary)] to-[var(--text-secondary)] bg-clip-text text-transparent">Create Account</h1>
+          <p className="text-[var(--text-secondary)] font-bold uppercase tracking-[0.3em] text-[10px]">Campus Notice Board Security Protocol</p>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+        <div className="glass-card p-10 shadow-2xl dark:shadow-none relative overflow-hidden">
           {/* Progress Indicator */}
           <div className="flex gap-2 mb-10">
             {[1, 2, 3].map((s) => (
@@ -171,7 +177,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                 >
                   <div className="text-center mb-8">
                     <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-2">Step 1 — Identify your role</p>
-                    <h2 className="text-xl font-bold italic text-white uppercase italic">Who are you?</h2>
+                    <h2 className="text-xl font-bold italic text-[var(--text-primary)] uppercase italic">Who are you?</h2>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -182,12 +188,12 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                         "p-6 rounded-3xl border transition-all text-center group",
                         role === 'student' 
                           ? "bg-blue-600/10 border-blue-500/50 shadow-lg shadow-blue-600/10" 
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                          : "bg-[var(--bg-main)] border-[var(--border-color)] hover:border-slate-700"
                       )}
                     >
-                      <GraduationCap className={cn("w-10 h-10 mx-auto mb-4 transition-colors", role === 'student' ? "text-blue-500" : "text-slate-600 group-hover:text-slate-400")} />
-                      <div className={cn("font-bold uppercase tracking-tighter italic", role === 'student' ? "text-white" : "text-slate-500")}>Student</div>
-                      <div className="text-[9px] uppercase tracking-widest text-slate-600 mt-1">Direct Access</div>
+                      <GraduationCap className={cn("w-10 h-10 mx-auto mb-4 transition-colors", role === 'student' ? "text-blue-500" : "text-[var(--text-secondary)] group-hover:text-slate-400")} />
+                      <div className={cn("font-bold uppercase tracking-tighter italic", role === 'student' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")}>Student</div>
+                      <div className="text-[9px] uppercase tracking-widest text-[var(--text-secondary)] mt-1 opacity-50">Direct Access</div>
                     </button>
 
                     <button 
@@ -197,12 +203,12 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                         "p-6 rounded-3xl border transition-all text-center group",
                         role === 'teacher' 
                           ? "bg-purple-600/10 border-purple-500/50 shadow-lg shadow-purple-600/10" 
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                          : "bg-[var(--bg-main)] border-[var(--border-color)] hover:border-slate-700"
                       )}
                     >
-                      <ShieldCheck className={cn("w-10 h-10 mx-auto mb-4 transition-colors", role === 'teacher' ? "text-purple-500" : "text-slate-600 group-hover:text-slate-400")} />
-                      <div className={cn("font-bold uppercase tracking-tighter italic", role === 'teacher' ? "text-white" : "text-slate-500")}>Teacher / Admin</div>
-                      <div className="text-[9px] uppercase tracking-widest text-slate-600 mt-1">Verified Role</div>
+                      <ShieldCheck className={cn("w-10 h-10 mx-auto mb-4 transition-colors", role === 'teacher' ? "text-purple-500" : "text-[var(--text-secondary)] group-hover:text-slate-400")} />
+                      <div className={cn("font-bold uppercase tracking-tighter italic", role === 'teacher' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")}>Teacher / Admin</div>
+                      <div className="text-[9px] uppercase tracking-widest text-[var(--text-secondary)] mt-1 opacity-50">Verified Role</div>
                     </button>
                   </div>
 
@@ -226,124 +232,122 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                 >
                   <div className="text-center mb-6">
                     <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-2">Step 2 — Personal Details</p>
-                    <h2 className="text-xl font-bold italic text-white uppercase tracking-tighter">Enter profile information</h2>
+                    <h2 className="text-xl font-bold italic text-[var(--text-primary)] uppercase tracking-tighter">Enter profile information</h2>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Full Name</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Full Name</label>
                       <div className="relative group">
-                        <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                        <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
                         <input 
                           type="text"
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                           placeholder="John Doe"
-                          className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
+                          className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium"
                         />
                       </div>
                     </div>
 
                     <div className="md:col-span-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Email Address</label>
+                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Email Address</label>
                        <div className="relative group">
-                         <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                         <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
                          <input 
                            type="email"
                            required
                            value={formData.email}
                            onChange={(e) => setFormData({...formData, email: e.target.value})}
                            placeholder={role === 'student' ? "2503032020017@goa.paruluniversity.ac.in" : "name@goa.paruluniversity.ac.in"}
-                           className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
+                           className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium"
                          />
                        </div>
-                       <p className="text-[9px] text-slate-600 mt-2 ml-4 uppercase tracking-tight font-bold">
+                       <p className="text-[9px] text-[var(--text-secondary)] mt-2 ml-4 uppercase tracking-tight font-bold opacity-50">
                          {role === 'student' ? 'Must follow numeric format: (ID)@goa.paruluniversity.ac.in' : 'Must end with @goa.paruluniversity.ac.in'}
                        </p>
                     </div>
 
-                    <div className={cn(role === 'student' ? "md:col-span-1" : "md:col-span-2")}>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Institution</label>
+                    <div className="md:col-span-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Institution</label>
                       <div className="relative group">
-                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
                         <select 
                           required
                           value={formData.institution}
                           onChange={(e) => setFormData({...formData, institution: e.target.value, department: ''})}
-                          className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none"
+                          className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium appearance-none"
                         >
                           <option value="">Select Faculty</option>
-                          {INSTITUTIONS.map(inst => <option key={inst} value={inst} className="bg-slate-900">{inst}</option>)}
+                          {INSTITUTIONS.map(inst => <option key={inst} value={inst} className="bg-[var(--bg-surface)]">{inst}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Department</label>
+                      <div className="relative group">
+                        <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
+                        <select 
+                          required
+                          disabled={!formData.institution}
+                          value={formData.department}
+                          onChange={(e) => setFormData({...formData, department: e.target.value})}
+                          className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium appearance-none disabled:opacity-50"
+                        >
+                          <option value="">Select Dept.</option>
+                          {availableDepartments.map(dept => <option key={dept} value={dept} className="bg-[var(--bg-surface)]">{dept}</option>)}
                         </select>
                       </div>
                     </div>
 
                     {role === 'student' && (
-                      <>
-                        <div className="md:col-span-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Department</label>
-                          <div className="relative group">
-                            <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                            <select 
-                              required
-                              disabled={!formData.institution}
-                              value={formData.department}
-                              onChange={(e) => setFormData({...formData, department: e.target.value})}
-                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none disabled:opacity-50"
-                            >
-                              <option value="">Select Dept.</option>
-                              {availableDepartments.map(dept => <option key={dept} value={dept} className="bg-slate-900">{dept}</option>)}
-                            </select>
-                          </div>
+                      <div className="md:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Semester</label>
+                        <div className="relative group">
+                          <GraduationCap className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
+                          <select 
+                            required
+                            value={formData.semester}
+                            onChange={(e) => setFormData({...formData, semester: e.target.value})}
+                            className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium appearance-none"
+                          >
+                            <option value="">Select Sem.</option>
+                            {['1', '2', '3', '4', '5', '6', '7', '8'].map(s => <option key={s} value={s} className="bg-[var(--bg-surface)]">Semester {s}</option>)}
+                          </select>
                         </div>
-
-                        <div className="md:col-span-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Semester</label>
-                          <div className="relative group">
-                            <GraduationCap className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                            <select 
-                              required
-                              value={formData.semester}
-                              onChange={(e) => setFormData({...formData, semester: e.target.value})}
-                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-10 focus:outline-none focus:border-blue-500/50 text-white font-medium appearance-none"
-                            >
-                              <option value="">Select Sem.</option>
-                              {['1', '2', '3', '4', '5', '6', '7', '8'].map(s => <option key={s} value={s} className="bg-slate-900">Semester {s}</option>)}
-                            </select>
-                          </div>
-                        </div>
-                      </>
+                      </div>
                     )}
 
                     {!isOAuth && (
                       <>
                         <div>
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Password</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Password</label>
                           <div className="relative group">
-                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
                             <input 
                               type="password"
                               required
                               value={formData.password}
                               onChange={(e) => setFormData({...formData, password: e.target.value})}
                               placeholder="••••••••"
-                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
+                              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium"
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Confirm</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Confirm</label>
                           <div className="relative group">
-                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-blue-500 transition-colors" />
                             <input 
                               type="password"
                               required
                               value={formData.confirmPassword}
                               onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                               placeholder="••••••••"
-                              className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-white font-medium"
+                              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] font-medium"
                             />
                           </div>
                         </div>
@@ -381,32 +385,32 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
                 >
                   <div className="text-center mb-8">
                     <p className="text-[10px] font-black uppercase tracking-widest text-purple-500 mb-2">Step 3 — Security Verification</p>
-                    <h2 className="text-xl font-bold italic text-white uppercase italic">Teacher Validation</h2>
+                    <h2 className="text-xl font-bold italic text-[var(--text-primary)] uppercase italic">Teacher Validation</h2>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-4 mb-1.5 block">Staff / Employee ID</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-1.5 block">Staff / Employee ID</label>
                       <input 
                         type="text"
                         required
                         value={formData.staffId}
                         onChange={(e) => setFormData({...formData, staffId: e.target.value})}
                         placeholder="STAFF-202X or EMP-001"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 px-6 focus:outline-none focus:border-purple-500/50 text-white uppercase"
+                        className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-3.5 px-6 focus:outline-none focus:border-purple-500/50 text-[var(--text-primary)] uppercase"
                       />
-                      <p className="text-[9px] text-slate-600 mt-2 ml-4 uppercase tracking-tight">Your unique staff or employee identification number</p>
+                      <p className="text-[9px] text-[var(--text-secondary)] mt-2 ml-4 uppercase tracking-tight font-bold opacity-50">Your unique staff or employee identification number</p>
                     </div>
 
-                  <div className="p-8 bg-slate-950/50 border-2 border-white/5 border-dashed rounded-[2.5rem]">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4 block text-center">Enter Authorized Key</label>
+                  <div className="p-8 bg-[var(--bg-main)]/50 border-2 border-[var(--border-color)] border-dashed rounded-[2.5rem]">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-purple-500 mb-4 block text-center">Enter Authorized Key</label>
                       <input 
                         type="password"
                         required
                         value={formData.accessCode}
                         onChange={(e) => setFormData({...formData, accessCode: e.target.value})}
                         placeholder="Enter authorized key"
-                        className="w-full bg-slate-950 border border-white/5 rounded-2xl py-5 px-6 focus:outline-none focus:border-purple-500/50 text-white text-center font-mono text-xl tracking-[0.5em]"
+                        className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-5 px-6 focus:outline-none focus:border-purple-500/50 text-[var(--text-primary)] text-center font-mono text-xl tracking-[0.5em]"
                       />
                     </div>
                   </div>
@@ -451,7 +455,7 @@ export default function Signup({ onSwitchToLogin }: { onSwitchToLogin: () => voi
             </AnimatePresence>
           </form>
 
-          <p className="text-center mt-10 text-xs font-bold text-slate-600 uppercase tracking-widest">
+          <p className="text-center mt-10 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">
             Already have an account?{" "}
             <button 
               onClick={onSwitchToLogin}

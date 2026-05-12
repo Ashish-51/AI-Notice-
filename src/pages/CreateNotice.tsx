@@ -5,7 +5,8 @@ import { ai, MODELS } from '../lib/gemini';
 import { 
   collection, 
   addDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  Timestamp 
 } from 'firebase/firestore';
 import { uploadToCloudinary } from '../lib/cloudinary';
 import { 
@@ -42,10 +43,18 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     description: '',
     category: 'General' as NoticeCategory,
     audienceType: 'Entire Faculty' as AudienceType,
+    faculty: '',
     department: '',
     semester: '',
     priority: 'Normal' as NoticePriority,
+    expiryDateTime: '',
   });
+
+  useEffect(() => {
+    if (profile?.institution && !formData.faculty) {
+      setFormData(prev => ({ ...prev, faculty: profile.institution }));
+    }
+  }, [profile, formData.faculty]);
 
   const CATEGORIES: NoticeCategory[] = [
     'Academics', 
@@ -61,33 +70,6 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     'Specific Course',
     'Specific Semester'
   ];
-
-  // Auto-category suggestion
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (formData.title.length > 5) {
-        try {
-          const prompt = `Analyze the notice title: "${formData.title}". 
-          Suggest the most relevant category from: ${CATEGORIES.join(', ')}. 
-          Return ONLY the category name. If unclear, return "General".`;
-          
-          const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt
-          });
-          
-          const suggested = response.text?.trim() as NoticeCategory;
-          if (CATEGORIES.includes(suggested)) {
-            setFormData(prev => ({ ...prev, category: suggested }));
-          }
-        } catch (err) {
-          console.error('AI Suggestion Error:', err);
-        }
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [formData.title]);
 
   const handleAiAction = async (action: 'suggest') => {
     if (!formData.description && !formData.title) return;
@@ -107,8 +89,15 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
           priority: suggestion.priority || prev.priority
         }));
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('AI Suggestion Error:', err);
+      if (err.message?.includes('429') || err.status === 429) {
+        toast.error("AI Quota Exceeded. Using manual settings.", {
+          icon: '⏳',
+        });
+      } else {
+        toast.error("AI Assistant is currently unavailable.");
+      }
     } finally {
       setAiLoading(false);
     }
@@ -191,9 +180,13 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
 
             extractedText = aiResponse.text || '';
             console.log("AI Extraction complete. Length:", extractedText.length);
-          } catch (aiErr) {
-            console.error("AI Extraction failed, proceeding without it:", aiErr);
-            // We don't block the whole process if extraction fails, but we log it
+          } catch (aiErr: any) {
+            console.error("AI Extraction failed:", aiErr);
+            if (aiErr.message?.includes('429')) {
+              toast.error("AI Extraction quota reached. Using manual description only.", { id: 'upload' });
+            } else {
+              toast.error("AI Analysis skipped due to technical issues.", { id: 'upload' });
+            }
           }
           
           toast.success("Document analyzed", { id: 'upload' });
@@ -210,7 +203,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         description: formData.description,
         category: formData.category,
         audienceType: formData.audienceType,
-        faculty: profile.institution || 'Parul University',
+        faculty: formData.faculty || 'Parul University',
         department: formData.audienceType === 'Specific Course' || formData.audienceType === 'Specific Semester' ? formData.department || null : null,
         semester: formData.audienceType === 'Specific Semester' ? formData.semester || null : null,
         priority: formData.priority,
@@ -221,6 +214,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         uploadedBy: user.uid,
         uploaderRole: profile.role || 'teacher',
         visibilityScope: formData.audienceType,
+        expiryDateTime: formData.expiryDateTime ? Timestamp.fromDate(new Date(formData.expiryDateTime)) : null,
         attachmentUrl,
         attachmentName,
         attachmentType,
@@ -243,13 +237,15 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const availableDepartments = profile?.institution ? DEPARTMENTS[profile.institution] || [] : [];
+  const availableDepartments = formData.faculty ? DEPARTMENTS[formData.faculty] || [] : [];
+  const isSuperAdmin = profile?.institution === 'Parul University';
+  const INSTITUTION_LIST = Object.keys(DEPARTMENTS);
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
       <button 
         onClick={onBack}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-all mb-8 group"
+        className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all mb-8 group"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Dashboard
@@ -257,8 +253,8 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight italic uppercase italic">Create New Notice</h1>
-          <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mt-1">Authorized for {profile?.institution || 'Administrative Faculty'}</p>
+          <h1 className="text-4xl font-black text-[var(--text-primary)] tracking-tight italic uppercase italic">Create New Notice</h1>
+          <p className="text-[var(--text-secondary)] text-[10px] uppercase font-black tracking-widest mt-1">Authorized for {profile?.institution || 'Administrative Faculty'}</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-500 text-[10px] font-bold uppercase tracking-widest">
            <Zap className="w-3 h-3 fill-current" /> Nexora AI Active
@@ -269,19 +265,19 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 mb-2 block">Notice Title</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-4 mb-2 block">Notice Title</label>
               <input 
                 required
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g. End Semester Exam Schedule"
-                className="w-full bg-slate-900/60 border border-white/5 rounded-[2rem] px-8 py-5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-slate-700"
+                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-[2rem] px-8 py-5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between ml-4 mb-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Description & Details</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] block">Description & Details</label>
                 <button 
                   type="button"
                   onClick={() => handleAiAction('suggest')}
@@ -297,7 +293,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Break down your announcement here. Start with essential info then details. AI assistance will automatically check for clarity."
-                className="w-full bg-slate-900/60 border border-white/5 rounded-[2.5rem] px-8 py-8 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white leading-relaxed placeholder:text-slate-700"
+                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-[2.5rem] px-8 py-8 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-[var(--text-primary)] leading-relaxed placeholder:text-[var(--text-secondary)]/30"
               />
             </div>
 
@@ -307,8 +303,8 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                     <FileUp className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black uppercase italic text-white leading-none">Official Document</h3>
-                    <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">Visible as PDF/Image preview</p>
+                    <h3 className="text-sm font-black uppercase italic text-[var(--text-primary)] leading-none">Official Document</h3>
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 uppercase font-bold tracking-widest opacity-50">Visible as PDF/Image preview</p>
                   </div>
                </div>
                
@@ -316,14 +312,14 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                  <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-white/5 hover:border-blue-500/30 rounded-3xl p-10 transition-all flex flex-col items-center gap-4 group bg-slate-950/40"
+                  className="w-full border-2 border-dashed border-[var(--border-color)] hover:border-blue-500/30 rounded-3xl p-10 transition-all flex flex-col items-center gap-4 group bg-[var(--bg-surface-alt)]"
                  >
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-blue-500/10 transition-colors">
-                      <Paperclip className="w-6 h-6 text-slate-500 group-hover:text-blue-400" />
+                    <div className="w-12 h-12 bg-[var(--bg-surface-alt)] rounded-2xl flex items-center justify-center group-hover:bg-blue-500/10 transition-colors">
+                      <Paperclip className="w-6 h-6 text-[var(--text-secondary)] group-hover:text-blue-400" />
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-black text-slate-300 group-hover:text-white transition-colors uppercase tracking-widest">Drag & Drop or Click</p>
-                      <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">Images, PDF (Max 20MB)</p>
+                      <p className="text-xs font-black text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors uppercase tracking-widest">Drag & Drop or Click</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] mt-1 uppercase font-bold tracking-widest opacity-50">Images, PDF (Max 20MB)</p>
                     </div>
                     <input 
                       type="file"
@@ -334,20 +330,20 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                     />
                  </button>
                ) : (
-                 <div className="bg-slate-950 border border-white/10 rounded-3xl p-6 flex items-center justify-between group">
+                 <div className="bg-[var(--bg-surface-alt)] border border-[var(--border-color)] rounded-3xl p-6 flex items-center justify-between group">
                     <div className="flex items-center gap-4 overflow-hidden">
                       <div className="shrink-0 w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
                         <FileText className="w-6 h-6 text-blue-400" />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-sm font-black text-white truncate uppercase italic">{attachment.name}</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{(attachment.size / (1024 * 1024)).toFixed(2)} MB — Ready</p>
+                        <p className="text-sm font-black text-[var(--text-primary)] truncate uppercase italic">{attachment.name}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest opacity-50">{(attachment.size / (1024 * 1024)).toFixed(2)} MB — Ready</p>
                       </div>
                     </div>
                     <button 
                       type="button"
                       onClick={() => setAttachment(null)}
-                      className="w-10 h-10 hover:bg-rose-500/10 rounded-xl text-slate-500 hover:text-rose-400 transition-all flex items-center justify-center"
+                      className="w-10 h-10 hover:bg-rose-500/10 rounded-xl text-[var(--text-secondary)] hover:text-rose-400 transition-all flex items-center justify-center"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -357,9 +353,24 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="space-y-6">
-             <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-8 space-y-8 shadow-2xl">
+             <div className="bg-[var(--card-bg)] backdrop-blur-2xl border border-[var(--border-color)] rounded-[3rem] p-8 space-y-8 shadow-2xl dark:shadow-none">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
+                  <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
+                      <Building2 className="w-3.5 h-3.5" /> Target Faculty
+                  </div>
+                  <select 
+                    value={formData.faculty}
+                    onChange={(e) => setFormData(p => ({ ...p, faculty: e.target.value, department: '' }))}
+                    disabled={!isSuperAdmin}
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 appearance-none text-[var(--text-primary)] uppercase tracking-widest disabled:opacity-50"
+                  >
+                    {!formData.faculty && <option value="">Select Faculty</option>}
+                    {INSTITUTION_LIST.map(inst => <option key={inst} value={inst} className="bg-[var(--bg-surface)]">{inst}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
                       <Users className="w-3.5 h-3.5" /> Audience
                   </div>
                   <div className="grid grid-cols-1 gap-2">
@@ -372,7 +383,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                           "w-full px-5 py-4 rounded-2xl border text-xs font-black uppercase tracking-widest transition-all text-left flex items-center justify-between group",
                           formData.audienceType === type 
                             ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20" 
-                            : "bg-slate-950 border-white/5 text-slate-500 hover:border-slate-800"
+                            : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-slate-800"
                         )}
                       >
                         {type}
@@ -391,15 +402,15 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-4 overflow-hidden"
                     >
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 block">Target Department</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-2 block opacity-50">Target Department</label>
                       <select 
                         required
                         value={formData.department}
                         onChange={(e) => setFormData(p => ({ ...p, department: e.target.value }))}
-                        className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 appearance-none text-white uppercase tracking-widest"
+                        className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 appearance-none text-[var(--text-primary)] uppercase tracking-widest"
                       >
                         <option value="">Select Department</option>
-                        {availableDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                        {availableDepartments.map(d => <option key={d} value={d} className="bg-[var(--bg-surface)]">{d}</option>)}
                       </select>
                     </motion.div>
                   )}
@@ -412,7 +423,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                       exit={{ opacity: 0, height: 0 }}
                       className="grid grid-cols-4 gap-2 overflow-hidden"
                     >
-                      <div className="col-span-4 text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2">Select Semester</div>
+                      <div className="col-span-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-2 mb-2 opacity-50">Select Semester</div>
                       {SEMESTERS.map(s => (
                         <button
                           key={s}
@@ -422,7 +433,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                             "py-3 rounded-xl border text-[10px] font-black transition-all",
                             formData.semester === s
                               ? "bg-blue-600 border-blue-500 text-white"
-                              : "bg-slate-950 border-white/5 text-slate-500"
+                              : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-secondary)]"
                           )}
                         >
                           S{s}
@@ -432,21 +443,21 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
+                <div className="space-y-4 pt-4 border-t border-[var(--border-color)]">
+                  <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
                       <BookOpen className="w-3.5 h-3.5" /> Classification
                   </div>
                   <select 
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-                    className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 appearance-none text-white uppercase tracking-widest"
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 appearance-none text-[var(--text-primary)] uppercase tracking-widest"
                   >
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {CATEGORIES.map(c => <option key={c} value={c} className="bg-[var(--bg-surface)]">{c}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-4">
-                   <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
+                   <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
                       <AlertCircle className="w-3.5 h-3.5" /> Priority Level
                    </div>
                    <div className="grid grid-cols-3 gap-2">
@@ -459,7 +470,7 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                             "py-3 text-[9px] font-black uppercase tracking-widest border rounded-xl transition-all",
                             formData.priority === p 
                               ? "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/20" 
-                              : "bg-slate-950 text-slate-500 border-white/5 hover:border-slate-800"
+                              : "bg-[var(--bg-main)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-slate-800"
                           )}
                         >
                           {p}
@@ -467,12 +478,24 @@ export default function CreateNotice({ onBack }: { onBack: () => void }) {
                       ))}
                    </div>
                 </div>
+
+                <div className="space-y-4 pt-4 border-t border-[var(--border-color)]">
+                   <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.2em] leading-none ml-2">
+                       <AlertCircle className="w-3.5 h-3.5" /> Expiry (Optional)
+                   </div>
+                   <input 
+                    type="datetime-local"
+                    value={formData.expiryDateTime}
+                    onChange={(e) => setFormData(p => ({ ...p, expiryDateTime: e.target.value }))}
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 px-6 text-xs font-bold focus:outline-none focus:border-blue-500/50 text-[var(--text-primary)] uppercase tracking-widest block"
+                   />
+                </div>
              </div>
 
              <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-50 text-slate-950 font-black h-18 rounded-[2rem] flex items-center justify-center gap-3 text-lg uppercase tracking-[0.1em] hover:bg-white transition-all transform active:scale-95 shadow-2xl shadow-blue-600/20 group"
+                className="w-full bg-[var(--text-primary)] text-[var(--bg-main)] font-black h-18 rounded-[2rem] flex items-center justify-center gap-3 text-lg uppercase tracking-[0.1em] transition-all transform active:scale-95 shadow-2xl shadow-blue-600/20 group"
              >
                 {loading ? 'PROCESSING...' : (
                   <>

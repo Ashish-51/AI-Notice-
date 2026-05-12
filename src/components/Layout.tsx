@@ -14,6 +14,8 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 import Chatbot from './Chatbot';
+import ThemeToggle from './ThemeToggle';
+import { Logo } from './Logo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,12 +33,12 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#020617] text-slate-100 selection:bg-blue-500/30">
+    <div className="flex min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] selection:bg-blue-500/30 transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900/40 border-r border-slate-800 flex flex-col py-6 px-4 shrink-0 hidden md:flex">
+      <aside className="w-64 bg-[var(--card-bg)] border-r border-[var(--border-color)] flex flex-col py-6 px-4 shrink-0 hidden md:flex backdrop-blur-xl">
         <div className="flex items-center gap-3 px-2 mb-10">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-xl italic shadow-lg shadow-blue-600/20">N</div>
-          <span className="text-xl font-bold tracking-tighter uppercase italic">SmartNotice</span>
+          <Logo className="w-8 h-8 text-blue-500 shadow-blue-600/20" />
+          <span className="text-xl font-bold tracking-tighter uppercase italic text-[var(--text-primary)]">SmartNotice</span>
         </div>
 
         <nav className="space-y-2 flex-1">
@@ -58,20 +60,20 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
           ))}
         </nav>
 
-        <div className="mt-auto p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
-          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-3">Auth Session</div>
+        <div className="mt-auto p-4 bg-[var(--nav-hover)] rounded-2xl border border-[var(--border-color)]">
+          <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-black mb-3">Auth Session</div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center border border-white/10 shadow-lg">
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="overflow-hidden">
-              <div className="text-sm font-bold truncate">{user?.displayName || 'Dr. Admin'}</div>
+              <div className="text-sm font-bold truncate text-[var(--text-primary)]">{user?.displayName || 'Dr. Admin'}</div>
               <div className="text-[10px] text-blue-400 font-bold uppercase tracking-tighter">{profile?.role || 'Senior Admin'}</div>
             </div>
           </div>
           <button 
             onClick={() => signOut()}
-            className="w-full py-2 px-3 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 rounded-lg border border-transparent hover:border-rose-500/10 transition-all flex items-center justify-center gap-2"
+            className="w-full py-2 px-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-rose-400 hover:bg-rose-500/5 rounded-lg border border-transparent hover:border-rose-500/10 transition-all flex items-center justify-center gap-2"
           >
             <LogOut className="w-3.5 h-3.5" /> Sign Out
           </button>
@@ -81,25 +83,26 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 shrink-0 bg-slate-950/50 backdrop-blur-sm relative z-10">
+        <header className="h-20 border-b border-[var(--border-color)] flex items-center justify-between px-8 shrink-0 bg-[var(--bg-surface)]/50 backdrop-blur-sm relative z-10 transition-colors duration-300">
           <div className="flex flex-col">
-            <h1 className="text-3xl font-black tracking-tight italic uppercase leading-none">Campus Feed</h1>
-            <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">
+            <h1 className="text-3xl font-black tracking-tight italic uppercase leading-none text-[var(--text-primary)]">Campus Feed</h1>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-1 uppercase font-bold tracking-widest">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })} • AI Secure
             </p>
           </div>
 
-          <div className="hidden lg:flex items-center gap-4 bg-slate-900 border border-slate-800 px-5 py-2 rounded-full mx-8">
-            <Search className="w-3.5 h-3.5 text-slate-500" />
+          <div className="hidden lg:flex items-center gap-4 bg-[var(--bg-main)] border border-[var(--border-color)] px-5 py-2 rounded-full mx-8">
+            <Search className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
             <input 
               type="text" 
               placeholder="SCANNING NETWORK..." 
-              className="bg-transparent text-[10px] text-slate-400 font-mono focus:outline-none w-48 uppercase tracking-widest"
+              className="bg-transparent text-[10px] text-[var(--text-secondary)] font-mono focus:outline-none w-48 uppercase tracking-widest"
             />
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]"></div>
           </div>
 
             <div className="flex items-center gap-4">
+            <ThemeToggle />
             {profile?.role === 'teacher' && (
               <button 
                 onClick={() => onNavigate('create')}

@@ -41,7 +41,7 @@ export interface Notice {
   department?: string;
   semester?: string;
   priority: NoticePriority;
-  expiryDate?: Timestamp;
+  expiryDateTime?: Timestamp;
   formLink?: string;
   attachmentUrl?: string;
   attachmentName?: string;
